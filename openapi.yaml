@@ -1,0 +1,3692 @@
+openapi: 3.1.0
+info:
+  title: 'Collector External API'
+  description: 'Synthetic examples. Obtain the deployment URL and issued bearer key from the operator. See workflow.md and operations.md. All external routes share 120 requests/minute per validated key; invalid credentials share 60/minute per IP. HTTP 429 includes Retry-After (seconds), X-RateLimit-Limit, X-RateLimit-Remaining and X-RateLimit-Reset (Unix seconds). Normal middleware responses include limit/remaining; framework errors may not. Laravel validation uses {message,errors}, not the controller {success:false,message,errors?} envelope.'
+  version: 1.0.0
+servers:
+  -
+    url: 'https://collector.example.invalid'
+tags:
+  -
+    name: 'External API'
+    description: ''
+components:
+  securitySchemes:
+    default:
+      type: http
+      scheme: bearer
+      description: 'Operator-issued bearer key. Editor is required except for latest revision; survey ownership or explicit appAdmin/surveyAdmin key access is still required.'
+security:
+  -
+    default: []
+paths:
+  '/api/external/surveys/{survey}/mutations':
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              properties:
+                target:
+                  minProperties: 1
+                  type: object
+                  description: 'Nonempty operation target; use a survey marker when no named target is consumed.'
+                  properties: {}
+                  examples:
+                    -
+                      page: feedback
+                expected_sequence:
+                  minimum: 0
+                  type:
+                    - integer
+                    - 'null'
+                  description: 'Nullable current sequence, minimum 0.'
+                  examples:
+                    - 0
+                note:
+                  maxLength: 255
+                  type:
+                    - string
+                    - 'null'
+                  description: 'Nullable revision note, maximum 255 characters.'
+                  examples:
+                    - 'Reviewed page addition'
+                operation:
+                  type: string
+                  description: ''
+                  enum:
+                    - create_page
+                    - upsert_page
+                    - move_page
+                    - delete_page
+                    - insert_question
+                    - upsert_question
+                    - update_question_props
+                    - move_question
+                    - delete_question
+                    - set_survey_languages
+                    - set_survey_settings
+                    - set_localized_text
+                  examples:
+                    - create_page
+                payload:
+                  type:
+                    - object
+                    - 'null'
+                  description: 'Nullable operation-specific payload.'
+                  properties: {}
+                  examples:
+                    -
+                      page:
+                        name: feedback
+                        elements: []
+                dry_run:
+                  type:
+                    - boolean
+                    - 'null'
+                  description: 'Nullable; true previews only, default false.'
+                  examples:
+                    - true
+              type: object
+              required:
+                - operation
+                - target
+        required: true
+      summary: 'Preview or apply one generic mutation'
+      operationId: previewOrApplyOneGenericMutation
+      description: "Requires editor and survey ownership or an explicit appAdmin/surveyAdmin key role. See operations.md for all 12 payloads.\nPreview does not persist: sequence/revision_id are null and latest_sequence is current. Apply advances sequence.\nUse expected_sequence 0 when no revision exists. Refetch/reconcile on 409 or timeout; never blindly replay insertions.\nNullable dry_run defaults false; nullable/omitted expected_sequence disables protection. Invalid snapshots/references return controller 422,\nwhile invalid envelopes return Laravel {message,errors} without success. Rate limits and retry headers: workflow.md."
+      parameters: []
+      responses:
+        200:
+          description: ''
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  -
+                    description: Preview
+                    type: object
+                    properties:
+                      success:
+                        type: boolean
+                        examples:
+                          - true
+                      message:
+                        type: string
+                        examples:
+                          - 'Survey mutation applied successfully'
+                      data:
+                        type: object
+                        properties:
+                          revision_id:
+                            type:
+                              - string
+                              - 'null'
+                            examples:
+                              - null
+                          sequence:
+                            type:
+                              - string
+                              - 'null'
+                            examples:
+                              - null
+                          latest_sequence:
+                            type: integer
+                            examples:
+                              - 0
+                          source:
+                            type: string
+                            examples:
+                              - external_api
+                          dry_run:
+                            type: boolean
+                            examples:
+                              - true
+                          actor:
+                            type: object
+                            properties:
+                              user_id:
+                                type: integer
+                                examples:
+                                  - 1
+                              api_key_id:
+                                type: string
+                                examples:
+                                  - 22222222-2222-4222-8222-222222222222
+                          survey:
+                            type: object
+                            properties:
+                              id:
+                                type: string
+                                examples:
+                                  - 11111111-1111-4111-8111-111111111111
+                              snapshot:
+                                type: object
+                                additionalProperties: true
+                              supported_languages:
+                                type: array
+                                items:
+                                  type: string
+                                examples:
+                                  -
+                                    - en
+                                    - et
+                                    - ru
+                              default_language:
+                                type: string
+                                examples:
+                                  - en
+                          validation:
+                            type: object
+                            properties:
+                              valid:
+                                type: boolean
+                                examples:
+                                  - true
+                              errors:
+                                type: array
+                                examples:
+                                  - []
+                              has_valid_schema:
+                                type: boolean
+                                examples:
+                                  - true
+                              question_count:
+                                type: integer
+                                examples:
+                                  - 0
+                          diff:
+                            type: array
+                            items:
+                              type: object
+                              properties:
+                                entity:
+                                  type: string
+                                  examples:
+                                    - page
+                                action:
+                                  type: string
+                                  examples:
+                                    - created
+                                target:
+                                  type: string
+                                  examples:
+                                    - feedback
+                                fields:
+                                  type: array
+                                  examples:
+                                    - []
+                            examples:
+                              -
+                                -
+                                  entity: page
+                                  action: created
+                                  target: feedback
+                                  fields: []
+                    examples:
+                      -
+                        success: true
+                        message: 'Survey mutation applied successfully'
+                        data:
+                          revision_id: null
+                          sequence: null
+                          latest_sequence: 0
+                          source: external_api
+                          dry_run: true
+                          actor:
+                            user_id: 1
+                            api_key_id: 22222222-2222-4222-8222-222222222222
+                          survey:
+                            id: 11111111-1111-4111-8111-111111111111
+                            snapshot:
+                              pages:
+                                -
+                                  name: feedback
+                                  elements: []
+                            supported_languages:
+                              - en
+                              - et
+                              - ru
+                            default_language: en
+                          validation:
+                            valid: true
+                            errors: []
+                            has_valid_schema: true
+                            question_count: 0
+                          diff:
+                            -
+                              entity: page
+                              action: created
+                              target: feedback
+                              fields: []
+                  -
+                    description: Applied
+                    type: object
+                    properties:
+                      success:
+                        type: boolean
+                        examples:
+                          - true
+                      message:
+                        type: string
+                        examples:
+                          - 'Survey mutation applied successfully'
+                      data:
+                        type: object
+                        properties:
+                          revision_id:
+                            type: string
+                            examples:
+                              - 33333333-3333-4333-8333-333333333333
+                          sequence:
+                            type: integer
+                            examples:
+                              - 1
+                          latest_sequence:
+                            type: integer
+                            examples:
+                              - 1
+                          source:
+                            type: string
+                            examples:
+                              - external_api
+                          dry_run:
+                            type: boolean
+                            examples:
+                              - false
+                          actor:
+                            type: object
+                            properties:
+                              user_id:
+                                type: integer
+                                examples:
+                                  - 1
+                              api_key_id:
+                                type: string
+                                examples:
+                                  - 22222222-2222-4222-8222-222222222222
+                          survey:
+                            type: object
+                            properties:
+                              id:
+                                type: string
+                                examples:
+                                  - 11111111-1111-4111-8111-111111111111
+                              snapshot:
+                                type: object
+                                additionalProperties: true
+                              supported_languages:
+                                type: array
+                                items:
+                                  type: string
+                                examples:
+                                  -
+                                    - en
+                                    - et
+                                    - ru
+                              default_language:
+                                type: string
+                                examples:
+                                  - en
+                          validation:
+                            type: object
+                            properties:
+                              valid:
+                                type: boolean
+                                examples:
+                                  - true
+                              errors:
+                                type: array
+                                examples:
+                                  - []
+                              has_valid_schema:
+                                type: boolean
+                                examples:
+                                  - true
+                              question_count:
+                                type: integer
+                                examples:
+                                  - 0
+                          diff:
+                            type: array
+                            items:
+                              type: object
+                              properties:
+                                entity:
+                                  type: string
+                                  examples:
+                                    - page
+                                action:
+                                  type: string
+                                  examples:
+                                    - created
+                                target:
+                                  type: string
+                                  examples:
+                                    - feedback
+                                fields:
+                                  type: array
+                                  examples:
+                                    - []
+                            examples:
+                              -
+                                -
+                                  entity: page
+                                  action: created
+                                  target: feedback
+                                  fields: []
+                    examples:
+                      -
+                        success: true
+                        message: 'Survey mutation applied successfully'
+                        data:
+                          revision_id: 33333333-3333-4333-8333-333333333333
+                          sequence: 1
+                          latest_sequence: 1
+                          source: external_api
+                          dry_run: false
+                          actor:
+                            user_id: 1
+                            api_key_id: 22222222-2222-4222-8222-222222222222
+                          survey:
+                            id: 11111111-1111-4111-8111-111111111111
+                            snapshot:
+                              pages:
+                                -
+                                  name: feedback
+                                  elements: []
+                            supported_languages:
+                              - en
+                              - et
+                              - ru
+                            default_language: en
+                          validation:
+                            valid: true
+                            errors: []
+                            has_valid_schema: true
+                            question_count: 0
+                          diff:
+                            -
+                              entity: page
+                              action: created
+                              target: feedback
+                              fields: []
+        401:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    examples:
+                      - false
+                  message:
+                    type: string
+                    examples:
+                      - 'Invalid API key'
+                examples:
+                  -
+                    success: false
+                    message: 'Invalid API key'
+        403:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    examples:
+                      - false
+                  message:
+                    type: string
+                    examples:
+                      - Forbidden
+                examples:
+                  -
+                    success: false
+                    message: Forbidden
+        404:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    examples:
+                      - 'No query results for model [App\Models\Survey].'
+                examples:
+                  -
+                    message: 'No query results for model [App\Models\Survey].'
+        409:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    examples:
+                      - false
+                  message:
+                    type: string
+                    examples:
+                      - 'Expected survey revision sequence 3 but latest sequence is 4.'
+                  errors:
+                    type: object
+                    properties:
+                      expected_sequence:
+                        type: array
+                        items:
+                          type: string
+                        examples:
+                          -
+                            - 'Expected survey revision sequence 3 but latest sequence is 4.'
+                      latest_sequence:
+                        type: integer
+                        examples:
+                          - 4
+                examples:
+                  -
+                    success: false
+                    message: 'Expected survey revision sequence 3 but latest sequence is 4.'
+                    errors:
+                      expected_sequence:
+                        - 'Expected survey revision sequence 3 but latest sequence is 4.'
+                      latest_sequence: 4
+        422:
+          description: ''
+          content:
+            application/json:
+              schema:
+                anyOf:
+                  -
+                    description: 'Envelope validation'
+                    type: object
+                    properties:
+                      message:
+                        type: string
+                        examples:
+                          - 'The target field is required.'
+                      errors:
+                        type: object
+                        properties:
+                          target:
+                            type: array
+                            items:
+                              type: string
+                            examples:
+                              -
+                                - 'The target field is required.'
+                    examples:
+                      -
+                        message: 'The target field is required.'
+                        errors:
+                          target:
+                            - 'The target field is required.'
+                  -
+                    description: 'Operation validation'
+                    type: object
+                    properties:
+                      success:
+                        type: boolean
+                        examples:
+                          - false
+                      message:
+                        type: string
+                        examples:
+                          - 'Target page was not found.'
+                    examples:
+                      -
+                        success: false
+                        message: 'Target page was not found.'
+        429:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    examples:
+                      - false
+                  message:
+                    type: string
+                    examples:
+                      - 'Too Many Attempts.'
+                examples:
+                  -
+                    success: false
+                    message: 'Too Many Attempts.'
+      tags:
+        - 'External API'
+    parameters:
+      -
+        in: path
+        name: survey
+        description: 'Survey UUID.'
+        required: true
+        schema:
+          type: string
+          examples:
+            - 11111111-1111-4111-8111-111111111111
+  /api/external/surveys:
+    post:
+      summary: 'Create a draft survey'
+      operationId: createADraftSurvey
+      description: "Requires the exact editor key role. The key user becomes owner. No activation or schema publishability validation.\nAlias is unique; default_language must occur in supported_languages. A supplied page package must be enabled and valid.\nNullable schema defaults to empty pages; nullable status/access default to draft/public. See workflow.md for error envelopes and rate limits."
+      parameters: []
+      responses:
+        201:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    examples:
+                      - true
+                  message:
+                    type: string
+                    examples:
+                      - 'External survey import target created successfully'
+                  data:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        examples:
+                          - 11111111-1111-4111-8111-111111111111
+                      alias:
+                        type: string
+                        examples:
+                          - example-feedback
+                      title:
+                        type: string
+                        examples:
+                          - 'Example feedback'
+                      description:
+                        type:
+                          - string
+                          - 'null'
+                        examples:
+                          - null
+                      json_schema:
+                        type: object
+                        additionalProperties: true
+                      page_template_package_id:
+                        type:
+                          - string
+                          - 'null'
+                        examples:
+                          - null
+                      page_template:
+                        type: object
+                        properties:
+                          selected_key:
+                            type:
+                              - string
+                              - 'null'
+                            examples:
+                              - null
+                          effective_key:
+                            type: string
+                            examples:
+                              - core/default
+                          fallback_reason:
+                            type:
+                              - string
+                              - 'null'
+                            examples:
+                              - null
+                      status:
+                        type: string
+                        examples:
+                          - draft
+                      access_type:
+                        type: string
+                        examples:
+                          - public
+                      public_preview_enabled:
+                        type: boolean
+                        examples:
+                          - false
+                      supported_languages:
+                        type: array
+                        items:
+                          type: string
+                        examples:
+                          -
+                            - en
+                            - et
+                            - ru
+                      default_language:
+                        type: string
+                        examples:
+                          - en
+                      creator:
+                        type: object
+                        properties:
+                          id:
+                            type: integer
+                            examples:
+                              - 1
+                          name:
+                            type: string
+                            examples:
+                              - 'Example Editor'
+                      current_revision:
+                        type:
+                          - string
+                          - 'null'
+                        examples:
+                          - null
+                      latest_revision_sequence:
+                        type:
+                          - string
+                          - 'null'
+                        examples:
+                          - null
+                      latest_revision_source:
+                        type:
+                          - string
+                          - 'null'
+                        examples:
+                          - null
+                      created_at:
+                        type: string
+                        examples:
+                          - '2026-01-01T00:00:00.000000Z'
+                      updated_at:
+                        type: string
+                        examples:
+                          - '2026-01-01T00:00:00.000000Z'
+                examples:
+                  -
+                    success: true
+                    message: 'External survey import target created successfully'
+                    data:
+                      id: 11111111-1111-4111-8111-111111111111
+                      alias: example-feedback
+                      title: 'Example feedback'
+                      description: null
+                      json_schema:
+                        pages: []
+                      page_template_package_id: null
+                      page_template:
+                        selected_key: null
+                        effective_key: core/default
+                        fallback_reason: null
+                      status: draft
+                      access_type: public
+                      public_preview_enabled: false
+                      supported_languages:
+                        - en
+                        - et
+                        - ru
+                      default_language: en
+                      creator:
+                        id: 1
+                        name: 'Example Editor'
+                      current_revision: null
+                      latest_revision_sequence: null
+                      latest_revision_source: null
+                      created_at: '2026-01-01T00:00:00.000000Z'
+                      updated_at: '2026-01-01T00:00:00.000000Z'
+        401:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    examples:
+                      - false
+                  message:
+                    type: string
+                    examples:
+                      - 'Missing API key token'
+                examples:
+                  -
+                    success: false
+                    message: 'Missing API key token'
+        403:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    examples:
+                      - false
+                  message:
+                    type: string
+                    examples:
+                      - 'API key does not have the required role'
+                examples:
+                  -
+                    success: false
+                    message: 'API key does not have the required role'
+        422:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    examples:
+                      - 'The alias has already been taken.'
+                  errors:
+                    type: object
+                    properties:
+                      alias:
+                        type: array
+                        items:
+                          type: string
+                        examples:
+                          -
+                            - 'The alias has already been taken.'
+                examples:
+                  -
+                    message: 'The alias has already been taken.'
+                    errors:
+                      alias:
+                        - 'The alias has already been taken.'
+        429:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    examples:
+                      - false
+                  message:
+                    type: string
+                    examples:
+                      - 'Too Many Attempts.'
+                examples:
+                  -
+                    success: false
+                    message: 'Too Many Attempts.'
+      tags:
+        - 'External API'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                alias:
+                  type: string
+                  description: 'Unique alias, at most 255 characters.'
+                  examples:
+                    - example-feedback
+                title:
+                  type: string
+                  description: 'Title, at most 255 characters.'
+                  examples:
+                    - 'Example feedback'
+                supported_languages:
+                  type: array
+                  description: 'Nonempty list of two-character codes.'
+                  items:
+                    type: string
+                  examples:
+                    -
+                      - en
+                      - et
+                      - ru
+                default_language:
+                  type: string
+                  description: 'Two-character code included in supported_languages.'
+                  examples:
+                    - en
+                json_schema:
+                  type:
+                    - object
+                    - 'null'
+                  description: 'Nullable SurveyJS schema.'
+                  properties: {}
+                  examples:
+                    -
+                      pages: []
+                page_template_package_id:
+                  type:
+                    - string
+                    - 'null'
+                  description: 'Nullable enabled page-package UUID; omit for system default.'
+                  examples:
+                    - null
+                status:
+                  type:
+                    - string
+                    - 'null'
+                  description: 'Nullable; only draft.'
+                  enum:
+                    - draft
+                    - null
+                  examples:
+                    - draft
+                access_type:
+                  type:
+                    - string
+                    - 'null'
+                  description: 'Nullable public or closed.'
+                  enum:
+                    - public
+                    - closed
+                    - null
+                  examples:
+                    - public
+              required:
+                - alias
+                - title
+                - supported_languages
+                - default_language
+  '/api/external/surveys/by-alias/{alias}/agent-context':
+    get:
+      summary: 'Resolve editing context by alias'
+      operationId: resolveEditingContextByAlias
+      description: "Same response contract and editor/ownership/key-role access as the UUID agent-context endpoint. Alias is exact, not a search.\nlatest_revision is null or {revision_id,sequence,source,created_at}; use sequence 0 when absent.\nworkflow contains mutation operations/expected_sequence and translation/finalize links. See workflow.md for rate limits and safe editing."
+      parameters: []
+      responses:
+        200:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    examples:
+                      - true
+                  message:
+                    type: string
+                    examples:
+                      - 'External agent survey import context retrieved successfully'
+                  data:
+                    type: object
+                    properties:
+                      survey:
+                        type: object
+                        properties:
+                          id:
+                            type: string
+                            examples:
+                              - 11111111-1111-4111-8111-111111111111
+                          alias:
+                            type: string
+                            examples:
+                              - example-feedback
+                          title:
+                            type: string
+                            examples:
+                              - 'Example feedback'
+                          default_language:
+                            type: string
+                            examples:
+                              - en
+                          supported_languages:
+                            type: array
+                            items:
+                              type: string
+                            examples:
+                              -
+                                - en
+                                - et
+                                - ru
+                      snapshot:
+                        type: object
+                        additionalProperties: true
+                      latest_revision:
+                        type:
+                          - object
+                          - 'null'
+                        properties:
+                          revision_id:
+                            type: string
+                            examples:
+                              - 33333333-3333-4333-8333-333333333333
+                          sequence:
+                            type: integer
+                            examples:
+                              - 1
+                          source:
+                            type: string
+                            examples:
+                              - external_api
+                          created_at:
+                            type: string
+                            examples:
+                              - '2026-01-01T00:00:00.000000Z'
+                      publishability:
+                        type: object
+                        properties:
+                          can_finalize:
+                            type: boolean
+                            examples:
+                              - false
+                          errors:
+                            type: array
+                            items:
+                              type: string
+                            examples:
+                              -
+                                - 'Survey must contain at least one question before activation.'
+                          question_count:
+                            type: integer
+                            examples:
+                              - 0
+                          has_valid_schema:
+                            type: boolean
+                            examples:
+                              - true
+                          status:
+                            type: string
+                            examples:
+                              - invalid
+                      workflow:
+                        type: object
+                        properties:
+                          mutations:
+                            type: object
+                            properties:
+                              endpoint:
+                                type: string
+                                examples:
+                                  - /api/external/surveys/11111111-1111-4111-8111-111111111111/mutations
+                              method:
+                                type: string
+                                examples:
+                                  - POST
+                              operations:
+                                type: array
+                                items:
+                                  type: string
+                                examples:
+                                  -
+                                    - create_page
+                                    - upsert_page
+                                    - move_page
+                                    - delete_page
+                                    - insert_question
+                                    - upsert_question
+                                    - update_question_props
+                                    - move_question
+                                    - delete_question
+                                    - set_survey_languages
+                                    - set_survey_settings
+                                    - set_localized_text
+                              supports_dry_run:
+                                type: boolean
+                                examples:
+                                  - true
+                              expected_sequence:
+                                type:
+                                  - integer
+                                  - 'null'
+                                examples:
+                                  - 1
+                          translation_source:
+                            type: object
+                            properties:
+                              endpoint:
+                                type: string
+                                examples:
+                                  - /api/external/surveys/11111111-1111-4111-8111-111111111111/translations/source
+                              method:
+                                type: string
+                                examples:
+                                  - GET
+                          apply_translations:
+                            type: object
+                            properties:
+                              endpoint:
+                                type: string
+                                examples:
+                                  - /api/external/surveys/11111111-1111-4111-8111-111111111111/translations
+                              method:
+                                type: string
+                                examples:
+                                  - POST
+                          finalize:
+                            type: object
+                            properties:
+                              endpoint:
+                                type: string
+                                examples:
+                                  - /api/external/surveys/11111111-1111-4111-8111-111111111111/finalize
+                              method:
+                                type: string
+                                examples:
+                                  - POST
+                examples:
+                  -
+                    success: true
+                    message: 'External agent survey import context retrieved successfully'
+                    data:
+                      survey:
+                        id: 11111111-1111-4111-8111-111111111111
+                        alias: example-feedback
+                        title: 'Example feedback'
+                        default_language: en
+                        supported_languages:
+                          - en
+                          - et
+                          - ru
+                      snapshot:
+                        pages: []
+                      latest_revision:
+                        revision_id: 33333333-3333-4333-8333-333333333333
+                        sequence: 1
+                        source: external_api
+                        created_at: '2026-01-01T00:00:00.000000Z'
+                      publishability:
+                        can_finalize: false
+                        errors:
+                          - 'Survey must contain at least one question before activation.'
+                        question_count: 0
+                        has_valid_schema: true
+                        status: invalid
+                      workflow:
+                        mutations:
+                          endpoint: /api/external/surveys/11111111-1111-4111-8111-111111111111/mutations
+                          method: POST
+                          operations:
+                            - create_page
+                            - upsert_page
+                            - move_page
+                            - delete_page
+                            - insert_question
+                            - upsert_question
+                            - update_question_props
+                            - move_question
+                            - delete_question
+                            - set_survey_languages
+                            - set_survey_settings
+                            - set_localized_text
+                          supports_dry_run: true
+                          expected_sequence: 1
+                        translation_source:
+                          endpoint: /api/external/surveys/11111111-1111-4111-8111-111111111111/translations/source
+                          method: GET
+                        apply_translations:
+                          endpoint: /api/external/surveys/11111111-1111-4111-8111-111111111111/translations
+                          method: POST
+                        finalize:
+                          endpoint: /api/external/surveys/11111111-1111-4111-8111-111111111111/finalize
+                          method: POST
+        401:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    examples:
+                      - false
+                  message:
+                    type: string
+                    examples:
+                      - 'Invalid API key'
+                examples:
+                  -
+                    success: false
+                    message: 'Invalid API key'
+        403:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    examples:
+                      - false
+                  message:
+                    type: string
+                    examples:
+                      - Forbidden
+                examples:
+                  -
+                    success: false
+                    message: Forbidden
+        404:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    examples:
+                      - false
+                  message:
+                    type: string
+                    examples:
+                      - 'Survey not found'
+                examples:
+                  -
+                    success: false
+                    message: 'Survey not found'
+        429:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    examples:
+                      - false
+                  message:
+                    type: string
+                    examples:
+                      - 'Too Many Attempts.'
+                examples:
+                  -
+                    success: false
+                    message: 'Too Many Attempts.'
+      tags:
+        - 'External API'
+    parameters:
+      -
+        in: path
+        name: alias
+        description: 'Exact survey alias, URL-encoded as one path segment.'
+        required: true
+        schema:
+          type: string
+          examples:
+            - example-feedback
+  '/api/external/surveys/{survey}/agent-context':
+    get:
+      summary: 'Get authenticated survey editing context'
+      operationId: getAuthenticatedSurveyEditingContext
+      description: "Requires editor and survey ownership or an explicit appAdmin/surveyAdmin key role. Session identity grants no extra access.\nSnapshot is effective SurveyJS JSON. latest_revision is nullable; when absent use expected_sequence 0 for guarded mutations,\neven though workflow.mutations.expected_sequence is null. Publishability is advisory, not authorization to finalize.\nRate limits and retry headers: workflow.md."
+      parameters: []
+      responses:
+        200:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    examples:
+                      - true
+                  message:
+                    type: string
+                    examples:
+                      - 'External agent survey import context retrieved successfully'
+                  data:
+                    type: object
+                    properties:
+                      survey:
+                        type: object
+                        properties:
+                          id:
+                            type: string
+                            examples:
+                              - 11111111-1111-4111-8111-111111111111
+                          alias:
+                            type: string
+                            examples:
+                              - example-feedback
+                          title:
+                            type: string
+                            examples:
+                              - 'Example feedback'
+                          default_language:
+                            type: string
+                            examples:
+                              - en
+                          supported_languages:
+                            type: array
+                            items:
+                              type: string
+                            examples:
+                              -
+                                - en
+                                - et
+                                - ru
+                      snapshot:
+                        type: object
+                        additionalProperties: true
+                      latest_revision:
+                        type:
+                          - object
+                          - 'null'
+                        properties:
+                          revision_id:
+                            type: string
+                            examples:
+                              - 33333333-3333-4333-8333-333333333333
+                          sequence:
+                            type: integer
+                            examples:
+                              - 1
+                          source:
+                            type: string
+                            examples:
+                              - external_api
+                          created_at:
+                            type: string
+                            examples:
+                              - '2026-01-01T00:00:00.000000Z'
+                        description: 'Nullable; otherwise revision_id UUID, sequence integer, source string and created_at timestamp.'
+                      publishability:
+                        type: object
+                        properties:
+                          can_finalize:
+                            type: boolean
+                            examples:
+                              - false
+                          errors:
+                            type: array
+                            items:
+                              type: string
+                            examples:
+                              -
+                                - 'Survey must contain at least one question before activation.'
+                          question_count:
+                            type: integer
+                            examples:
+                              - 0
+                          has_valid_schema:
+                            type: boolean
+                            examples:
+                              - true
+                          status:
+                            type: string
+                            examples:
+                              - invalid
+                      workflow:
+                        type: object
+                        properties:
+                          mutations:
+                            type: object
+                            properties:
+                              endpoint:
+                                type: string
+                                examples:
+                                  - /api/external/surveys/11111111-1111-4111-8111-111111111111/mutations
+                              method:
+                                type: string
+                                examples:
+                                  - POST
+                              operations:
+                                type: array
+                                items:
+                                  type: string
+                                examples:
+                                  -
+                                    - create_page
+                                    - upsert_page
+                                    - move_page
+                                    - delete_page
+                                    - insert_question
+                                    - upsert_question
+                                    - update_question_props
+                                    - move_question
+                                    - delete_question
+                                    - set_survey_languages
+                                    - set_survey_settings
+                                    - set_localized_text
+                              supports_dry_run:
+                                type: boolean
+                                examples:
+                                  - true
+                              expected_sequence:
+                                type:
+                                  - integer
+                                  - 'null'
+                                examples:
+                                  - 1
+                          translation_source:
+                            type: object
+                            properties:
+                              endpoint:
+                                type: string
+                                examples:
+                                  - /api/external/surveys/11111111-1111-4111-8111-111111111111/translations/source
+                              method:
+                                type: string
+                                examples:
+                                  - GET
+                          apply_translations:
+                            type: object
+                            properties:
+                              endpoint:
+                                type: string
+                                examples:
+                                  - /api/external/surveys/11111111-1111-4111-8111-111111111111/translations
+                              method:
+                                type: string
+                                examples:
+                                  - POST
+                          finalize:
+                            type: object
+                            properties:
+                              endpoint:
+                                type: string
+                                examples:
+                                  - /api/external/surveys/11111111-1111-4111-8111-111111111111/finalize
+                              method:
+                                type: string
+                                examples:
+                                  - POST
+                examples:
+                  -
+                    success: true
+                    message: 'External agent survey import context retrieved successfully'
+                    data:
+                      survey:
+                        id: 11111111-1111-4111-8111-111111111111
+                        alias: example-feedback
+                        title: 'Example feedback'
+                        default_language: en
+                        supported_languages:
+                          - en
+                          - et
+                          - ru
+                      snapshot:
+                        pages: []
+                      latest_revision:
+                        revision_id: 33333333-3333-4333-8333-333333333333
+                        sequence: 1
+                        source: external_api
+                        created_at: '2026-01-01T00:00:00.000000Z'
+                      publishability:
+                        can_finalize: false
+                        errors:
+                          - 'Survey must contain at least one question before activation.'
+                        question_count: 0
+                        has_valid_schema: true
+                        status: invalid
+                      workflow:
+                        mutations:
+                          endpoint: /api/external/surveys/11111111-1111-4111-8111-111111111111/mutations
+                          method: POST
+                          operations:
+                            - create_page
+                            - upsert_page
+                            - move_page
+                            - delete_page
+                            - insert_question
+                            - upsert_question
+                            - update_question_props
+                            - move_question
+                            - delete_question
+                            - set_survey_languages
+                            - set_survey_settings
+                            - set_localized_text
+                          supports_dry_run: true
+                          expected_sequence: 1
+                        translation_source:
+                          endpoint: /api/external/surveys/11111111-1111-4111-8111-111111111111/translations/source
+                          method: GET
+                        apply_translations:
+                          endpoint: /api/external/surveys/11111111-1111-4111-8111-111111111111/translations
+                          method: POST
+                        finalize:
+                          endpoint: /api/external/surveys/11111111-1111-4111-8111-111111111111/finalize
+                          method: POST
+        401:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    examples:
+                      - false
+                  message:
+                    type: string
+                    examples:
+                      - 'Invalid API key'
+                examples:
+                  -
+                    success: false
+                    message: 'Invalid API key'
+        403:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    examples:
+                      - false
+                  message:
+                    type: string
+                    examples:
+                      - Forbidden
+                examples:
+                  -
+                    success: false
+                    message: Forbidden
+        404:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    examples:
+                      - 'Survey not found.'
+                examples:
+                  -
+                    message: 'Survey not found.'
+        429:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    examples:
+                      - false
+                  message:
+                    type: string
+                    examples:
+                      - 'Too Many Attempts.'
+                examples:
+                  -
+                    success: false
+                    message: 'Too Many Attempts.'
+      tags:
+        - 'External API'
+    parameters:
+      -
+        in: path
+        name: survey
+        description: 'Survey UUID.'
+        required: true
+        schema:
+          type: string
+          examples:
+            - 11111111-1111-4111-8111-111111111111
+  '/api/external/surveys/{survey}/finalize':
+    post:
+      summary: 'Finalize and activate a survey'
+      operationId: finalizeAndActivateASurvey
+      description: "Explicit user approval required. Requires editor and survey ownership or an explicit appAdmin/surveyAdmin key role.\nValidates publishability, creates a durable publish revision and sets active status. No dry-run or expected-sequence protection.\nResult contains full SurveyResource and SurveyRevisionResource shapes (see create survey/latest revision); current_revision is populated.\nInvalid note uses Laravel 422 without success; activation/schema failure uses controller 422. Rate limits and retry headers: workflow.md."
+      parameters: []
+      responses:
+        200:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    examples:
+                      - true
+                  message:
+                    type: string
+                    examples:
+                      - 'Survey finalized successfully'
+                  data:
+                    type: object
+                    properties:
+                      survey:
+                        type: object
+                        properties:
+                          id:
+                            type: string
+                            examples:
+                              - 11111111-1111-4111-8111-111111111111
+                          alias:
+                            type: string
+                            examples:
+                              - example-feedback
+                          title:
+                            type: string
+                            examples:
+                              - 'Example feedback'
+                          description:
+                            type:
+                              - string
+                              - 'null'
+                            examples:
+                              - null
+                          json_schema:
+                            type: object
+                            additionalProperties: true
+                          page_template_package_id:
+                            type:
+                              - string
+                              - 'null'
+                            examples:
+                              - null
+                          page_template:
+                            type: object
+                            properties:
+                              selected_key:
+                                type:
+                                  - string
+                                  - 'null'
+                                examples:
+                                  - null
+                              effective_key:
+                                type: string
+                                examples:
+                                  - core/default
+                              fallback_reason:
+                                type:
+                                  - string
+                                  - 'null'
+                                examples:
+                                  - null
+                          status:
+                            type: string
+                            examples:
+                              - active
+                          access_type:
+                            type: string
+                            examples:
+                              - public
+                          public_preview_enabled:
+                            type: boolean
+                            examples:
+                              - false
+                          supported_languages:
+                            type: array
+                            items:
+                              type: string
+                            examples:
+                              -
+                                - en
+                                - et
+                                - ru
+                          default_language:
+                            type: string
+                            examples:
+                              - en
+                          creator:
+                            type: object
+                            properties:
+                              id:
+                                type: integer
+                                examples:
+                                  - 1
+                              name:
+                                type: string
+                                examples:
+                                  - 'Example Editor'
+                          current_revision:
+                            type: object
+                            properties:
+                              revision_id:
+                                type: string
+                                examples:
+                                  - 33333333-3333-4333-8333-333333333333
+                              sequence:
+                                type: integer
+                                examples:
+                                  - 4
+                              source:
+                                type: string
+                                examples:
+                                  - publish
+                              actor:
+                                type: object
+                                properties:
+                                  user_id:
+                                    type: integer
+                                    examples:
+                                      - 1
+                                  api_key_id:
+                                    type: string
+                                    examples:
+                                      - 22222222-2222-4222-8222-222222222222
+                              survey:
+                                type: object
+                                properties:
+                                  id:
+                                    type: string
+                                    examples:
+                                      - 11111111-1111-4111-8111-111111111111
+                                  snapshot:
+                                    type: object
+                                    additionalProperties: true
+                              validation:
+                                type:
+                                  - string
+                                  - 'null'
+                                examples:
+                                  - null
+                              diff:
+                                type: array
+                                items:
+                                  type: object
+                                  properties:
+                                    entity:
+                                      type: string
+                                      examples: [survey]
+                                    action:
+                                      type: string
+                                      examples: [published]
+                                    target:
+                                      type: string
+                                      examples: [survey]
+                                    fields:
+                                      type: array
+                                      examples: [[]]
+                                examples:
+                                  -
+                                    -
+                                      entity: survey
+                                      action: published
+                                      target: survey
+                                      fields: []
+                              is_durable:
+                                type: boolean
+                                examples:
+                                  - true
+                              note:
+                                type: string
+                                examples:
+                                  - 'Approved for activation'
+                              created_at:
+                                type: string
+                                examples:
+                                  - '2026-01-01T00:00:00.000000Z'
+                          latest_revision_sequence:
+                            type: integer
+                            examples:
+                              - 4
+                          latest_revision_source:
+                            type: string
+                            examples:
+                              - publish
+                          created_at:
+                            type: string
+                            examples:
+                              - '2026-01-01T00:00:00.000000Z'
+                          updated_at:
+                            type: string
+                            examples:
+                              - '2026-01-01T00:00:00.000000Z'
+                      revision:
+                        type: object
+                        properties:
+                          revision_id:
+                            type: string
+                            examples:
+                              - 33333333-3333-4333-8333-333333333333
+                          sequence:
+                            type: integer
+                            examples:
+                              - 4
+                          source:
+                            type: string
+                            examples:
+                              - publish
+                          actor:
+                            type: object
+                            properties:
+                              user_id:
+                                type: integer
+                                examples:
+                                  - 1
+                              api_key_id:
+                                type: string
+                                examples:
+                                  - 22222222-2222-4222-8222-222222222222
+                          survey:
+                            type: object
+                            properties:
+                              id:
+                                type: string
+                                examples:
+                                  - 11111111-1111-4111-8111-111111111111
+                              snapshot:
+                                type: object
+                                additionalProperties: true
+                          validation:
+                            type:
+                              - string
+                              - 'null'
+                            examples:
+                              - null
+                          diff:
+                            type: array
+                            items:
+                              type: object
+                              properties:
+                                entity:
+                                  type: string
+                                  examples:
+                                    - survey
+                                action:
+                                  type: string
+                                  examples:
+                                    - published
+                                target:
+                                  type: string
+                                  examples:
+                                    - survey
+                                fields:
+                                  type: array
+                                  examples:
+                                    - []
+                            examples:
+                              -
+                                -
+                                  entity: survey
+                                  action: published
+                                  target: survey
+                                  fields: []
+                          is_durable:
+                            type: boolean
+                            examples:
+                              - true
+                          note:
+                            type: string
+                            examples:
+                              - 'Approved for activation'
+                          created_at:
+                            type: string
+                            examples:
+                              - '2026-01-01T00:00:00.000000Z'
+                examples:
+                  -
+                    success: true
+                    message: 'Survey finalized successfully'
+                    data:
+                      survey:
+                        id: 11111111-1111-4111-8111-111111111111
+                        alias: example-feedback
+                        title: 'Example feedback'
+                        description: null
+                        json_schema:
+                          pages:
+                            -
+                              name: feedback
+                              elements:
+                                -
+                                  type: text
+                                  name: comment
+                        page_template_package_id: null
+                        page_template:
+                          selected_key: null
+                          effective_key: core/default
+                          fallback_reason: null
+                        status: active
+                        access_type: public
+                        public_preview_enabled: false
+                        supported_languages:
+                          - en
+                          - et
+                          - ru
+                        default_language: en
+                        creator:
+                          id: 1
+                          name: 'Example Editor'
+                        current_revision:
+                          revision_id: 33333333-3333-4333-8333-333333333333
+                          sequence: 4
+                          source: publish
+                          actor:
+                            user_id: 1
+                            api_key_id: 22222222-2222-4222-8222-222222222222
+                          survey:
+                            id: 11111111-1111-4111-8111-111111111111
+                            snapshot:
+                              pages:
+                                -
+                                  name: feedback
+                                  elements:
+                                    -
+                                      type: text
+                                      name: comment
+                          validation: null
+                          diff:
+                            -
+                              entity: survey
+                              action: published
+                              target: survey
+                              fields: []
+                          is_durable: true
+                          note: 'Approved for activation'
+                          created_at: '2026-01-01T00:00:00.000000Z'
+                        latest_revision_sequence: 4
+                        latest_revision_source: publish
+                        created_at: '2026-01-01T00:00:00.000000Z'
+                        updated_at: '2026-01-01T00:00:00.000000Z'
+                      revision:
+                        revision_id: 33333333-3333-4333-8333-333333333333
+                        sequence: 4
+                        source: publish
+                        actor:
+                          user_id: 1
+                          api_key_id: 22222222-2222-4222-8222-222222222222
+                        survey:
+                          id: 11111111-1111-4111-8111-111111111111
+                          snapshot:
+                            pages:
+                              -
+                                name: feedback
+                                elements:
+                                  -
+                                    type: text
+                                    name: comment
+                        validation: null
+                        diff:
+                          -
+                            entity: survey
+                            action: published
+                            target: survey
+                            fields: []
+                        is_durable: true
+                        note: 'Approved for activation'
+                        created_at: '2026-01-01T00:00:00.000000Z'
+        401:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    examples:
+                      - false
+                  message:
+                    type: string
+                    examples:
+                      - 'Invalid API key'
+                examples:
+                  -
+                    success: false
+                    message: 'Invalid API key'
+        403:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    examples:
+                      - false
+                  message:
+                    type: string
+                    examples:
+                      - Forbidden
+                examples:
+                  -
+                    success: false
+                    message: Forbidden
+        404:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    examples:
+                      - 'Survey not found.'
+                examples:
+                  -
+                    message: 'Survey not found.'
+        422:
+          description: ''
+          content:
+            application/json:
+              schema:
+                anyOf:
+                  -
+                    description: 'Activation validation'
+                    type: object
+                    properties:
+                      success:
+                        type: boolean
+                        examples:
+                          - false
+                      message:
+                        type: string
+                        examples:
+                          - 'Cannot activate survey.'
+                      errors:
+                        type: object
+                        properties:
+                          activation:
+                            type: array
+                            items:
+                              type: string
+                            examples:
+                              -
+                                - 'Survey must contain at least one question before activation.'
+                    examples:
+                      -
+                        success: false
+                        message: 'Cannot activate survey.'
+                        errors:
+                          activation:
+                            - 'Survey must contain at least one question before activation.'
+                  -
+                    description: 'Envelope validation'
+                    type: object
+                    properties:
+                      message:
+                        type: string
+                        examples:
+                          - 'The note field must not be greater than 255 characters.'
+                      errors:
+                        type: object
+                        properties:
+                          note:
+                            type: array
+                            items:
+                              type: string
+                            examples:
+                              -
+                                - 'The note field must not be greater than 255 characters.'
+                    examples:
+                      -
+                        message: 'The note field must not be greater than 255 characters.'
+                        errors:
+                          note:
+                            - 'The note field must not be greater than 255 characters.'
+        429:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    examples:
+                      - false
+                  message:
+                    type: string
+                    examples:
+                      - 'Too Many Attempts.'
+                examples:
+                  -
+                    success: false
+                    message: 'Too Many Attempts.'
+      tags:
+        - 'External API'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                note:
+                  type:
+                    - string
+                    - 'null'
+                  description: 'Nullable note <=255 characters; defaults to Finalized from external API.'
+                  examples:
+                    - 'Approved for activation'
+    parameters:
+      -
+        in: path
+        name: survey
+        description: 'Survey UUID.'
+        required: true
+        schema:
+          type: string
+          examples:
+            - 11111111-1111-4111-8111-111111111111
+  '/api/external/surveys/{survey}/translations/source':
+    get:
+      summary: 'Export translatable text'
+      operationId: exportTranslatableText
+      description: "Requires editor and survey ownership or an explicit appAdmin/surveyAdmin key role. Preserve items[].key verbatim when applying.\nItems cover nonempty top-level page/question text and choice/row/column text. Optional item keys include question,\nchoice_index, collection and entry_index. Source text falls back to default language then first nonempty translation.\nRate limits and retry headers: workflow.md."
+      parameters:
+        -
+          in: query
+          name: source_language
+          description: 'Nullable two-character code, defaults to survey default.'
+          required: false
+          schema:
+            type:
+              - string
+              - 'null'
+            description: 'Nullable two-character code, defaults to survey default.'
+            examples:
+              - en
+      responses:
+        200:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    examples:
+                      - true
+                  message:
+                    type: string
+                    examples:
+                      - 'Survey translation source bundle retrieved successfully'
+                  data:
+                    type: object
+                    properties:
+                      survey:
+                        type: object
+                        properties:
+                          id:
+                            type: string
+                            examples:
+                              - 11111111-1111-4111-8111-111111111111
+                          alias:
+                            type: string
+                            examples:
+                              - example-feedback
+                          supported_languages:
+                            type: array
+                            items:
+                              type: string
+                            examples:
+                              -
+                                - en
+                                - et
+                                - ru
+                          default_language:
+                            type: string
+                            examples:
+                              - en
+                          source_language:
+                            type: string
+                            examples:
+                              - en
+                      items:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            key:
+                              type: string
+                              examples:
+                                - pages.feedback.questions.service_rating.title
+                            entity:
+                              type: string
+                              examples:
+                                - question
+                            field:
+                              type: string
+                              examples:
+                                - title
+                            page:
+                              type: string
+                              examples:
+                                - feedback
+                            question:
+                              type: string
+                              examples:
+                                - service_rating
+                            source_text:
+                              type: string
+                              examples:
+                                - 'How was the service?'
+                        examples:
+                          -
+                            -
+                              key: pages.feedback.questions.service_rating.title
+                              entity: question
+                              field: title
+                              page: feedback
+                              question: service_rating
+                              source_text: 'How was the service?'
+                examples:
+                  -
+                    success: true
+                    message: 'Survey translation source bundle retrieved successfully'
+                    data:
+                      survey:
+                        id: 11111111-1111-4111-8111-111111111111
+                        alias: example-feedback
+                        supported_languages:
+                          - en
+                          - et
+                          - ru
+                        default_language: en
+                        source_language: en
+                      items:
+                        -
+                          key: pages.feedback.questions.service_rating.title
+                          entity: question
+                          field: title
+                          page: feedback
+                          question: service_rating
+                          source_text: 'How was the service?'
+        401:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    examples:
+                      - false
+                  message:
+                    type: string
+                    examples:
+                      - 'Invalid API key'
+                examples:
+                  -
+                    success: false
+                    message: 'Invalid API key'
+        403:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    examples:
+                      - false
+                  message:
+                    type: string
+                    examples:
+                      - Forbidden
+                examples:
+                  -
+                    success: false
+                    message: Forbidden
+        404:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    examples:
+                      - 'Survey not found.'
+                examples:
+                  -
+                    message: 'Survey not found.'
+        422:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    examples:
+                      - 'The source language field must be 2 characters.'
+                  errors:
+                    type: object
+                    properties:
+                      source_language:
+                        type: array
+                        items:
+                          type: string
+                        examples:
+                          -
+                            - 'The source language field must be 2 characters.'
+                examples:
+                  -
+                    message: 'The source language field must be 2 characters.'
+                    errors:
+                      source_language:
+                        - 'The source language field must be 2 characters.'
+        429:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    examples:
+                      - false
+                  message:
+                    type: string
+                    examples:
+                      - 'Too Many Attempts.'
+                examples:
+                  -
+                    success: false
+                    message: 'Too Many Attempts.'
+      tags:
+        - 'External API'
+    parameters:
+      -
+        in: path
+        name: survey
+        description: 'Survey UUID.'
+        required: true
+        schema:
+          type: string
+          examples:
+            - 11111111-1111-4111-8111-111111111111
+  '/api/external/surveys/{survey}/translations':
+    post:
+      summary: 'Apply exported translations'
+      operationId: applyExportedTranslations
+      description: "Requires editor and survey ownership or an explicit appAdmin/surveyAdmin key role. No dry-run or expected-sequence protection.\nReview first, coordinate writers and reconcile timeouts before replay. Keys must be exported unchanged; unknown keys fail 422.\nReplaces supplied language entries, preserves others and augments supported languages with source/default/map languages.\nRate limits and retry headers: workflow.md. Laravel envelope failures have no success property."
+      parameters: []
+      responses:
+        200:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    examples:
+                      - true
+                  message:
+                    type: string
+                    examples:
+                      - 'Survey translations applied successfully'
+                  data:
+                    type: object
+                    properties:
+                      revision_id:
+                        type: string
+                        examples:
+                          - 33333333-3333-4333-8333-333333333333
+                      sequence:
+                        type: integer
+                        examples:
+                          - 4
+                      source:
+                        type: string
+                        examples:
+                          - external_api
+                      snapshot:
+                        type: object
+                        additionalProperties: true
+                      survey:
+                        type: object
+                        properties:
+                          id:
+                            type: string
+                            examples:
+                              - 11111111-1111-4111-8111-111111111111
+                          snapshot:
+                            type: object
+                            additionalProperties: true
+                          supported_languages:
+                            type: array
+                            items:
+                              type: string
+                            examples:
+                              -
+                                - en
+                                - et
+                                - ru
+                          default_language:
+                            type: string
+                            examples:
+                              - en
+                      validation:
+                        type: object
+                        properties:
+                          valid:
+                            type: boolean
+                            examples:
+                              - true
+                          errors:
+                            type: array
+                            examples:
+                              - []
+                          has_valid_schema:
+                            type: boolean
+                            examples:
+                              - true
+                          question_count:
+                            type: integer
+                            examples:
+                              - 1
+                      diff:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            entity:
+                              type: string
+                              examples:
+                                - survey
+                            action:
+                              type: string
+                              examples:
+                                - updated
+                            target:
+                              type: string
+                              examples:
+                                - survey
+                            fields:
+                              type: array
+                              examples:
+                                - []
+                        examples:
+                          -
+                            -
+                              entity: survey
+                              action: updated
+                              target: survey
+                              fields: []
+                      actor:
+                        type: object
+                        properties:
+                          user_id:
+                            type: integer
+                            examples:
+                              - 1
+                          api_key_id:
+                            type: string
+                            examples:
+                              - 22222222-2222-4222-8222-222222222222
+                      translated_items_count:
+                        type: integer
+                        examples:
+                          - 1
+                examples:
+                  -
+                    success: true
+                    message: 'Survey translations applied successfully'
+                    data:
+                      revision_id: 33333333-3333-4333-8333-333333333333
+                      sequence: 4
+                      source: external_api
+                      snapshot:
+                        pages:
+                          -
+                            name: feedback
+                            elements:
+                              -
+                                name: service_rating
+                                type: radiogroup
+                                title:
+                                  en: 'How was the service?'
+                                  ru: 'Как вы оцениваете обслуживание?'
+                                choices:
+                                  - good
+                                  - poor
+                      survey:
+                        id: 11111111-1111-4111-8111-111111111111
+                        snapshot:
+                          pages:
+                            -
+                              name: feedback
+                              elements:
+                                -
+                                  name: service_rating
+                                  type: radiogroup
+                                  title:
+                                    en: 'How was the service?'
+                                    ru: 'Как вы оцениваете обслуживание?'
+                                  choices:
+                                    - good
+                                    - poor
+                        supported_languages:
+                          - en
+                          - et
+                          - ru
+                        default_language: en
+                      validation:
+                        valid: true
+                        errors: []
+                        has_valid_schema: true
+                        question_count: 1
+                      diff:
+                        -
+                          entity: survey
+                          action: updated
+                          target: survey
+                          fields: []
+                      actor:
+                        user_id: 1
+                        api_key_id: 22222222-2222-4222-8222-222222222222
+                      translated_items_count: 1
+        401:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    examples:
+                      - false
+                  message:
+                    type: string
+                    examples:
+                      - 'Invalid API key'
+                examples:
+                  -
+                    success: false
+                    message: 'Invalid API key'
+        403:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    examples:
+                      - false
+                  message:
+                    type: string
+                    examples:
+                      - Forbidden
+                examples:
+                  -
+                    success: false
+                    message: Forbidden
+        404:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    examples:
+                      - 'Survey not found.'
+                examples:
+                  -
+                    message: 'Survey not found.'
+        422:
+          description: ''
+          content:
+            application/json:
+              schema:
+                anyOf:
+                  -
+                    description: 'Envelope validation'
+                    type: object
+                    properties:
+                      message:
+                        type: string
+                        examples:
+                          - 'The translations field is required.'
+                      errors:
+                        type: object
+                        properties:
+                          translations:
+                            type: array
+                            items:
+                              type: string
+                            examples:
+                              -
+                                - 'The translations field is required.'
+                    examples:
+                      -
+                        message: 'The translations field is required.'
+                        errors:
+                          translations:
+                            - 'The translations field is required.'
+                  -
+                    description: 'Unknown key'
+                    type: object
+                    properties:
+                      success:
+                        type: boolean
+                        examples:
+                          - false
+                      message:
+                        type: string
+                        examples:
+                          - 'Unknown translation key.'
+                    examples:
+                      -
+                        success: false
+                        message: 'Unknown translation key.'
+        429:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    examples:
+                      - false
+                  message:
+                    type: string
+                    examples:
+                      - 'Too Many Attempts.'
+                examples:
+                  -
+                    success: false
+                    message: 'Too Many Attempts.'
+      tags:
+        - 'External API'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                source_language:
+                  type: string
+                  description: 'Exactly two characters.'
+                  examples:
+                    - en
+                supported_languages:
+                  type: array
+                  description: 'Nonempty list, codes exactly two characters.'
+                  items:
+                    type: string
+                  examples:
+                    -
+                      - en
+                      - et
+                      - ru
+                default_language:
+                  type: string
+                  description: 'Exactly two characters.'
+                  examples:
+                    - en
+                translations:
+                  type: array
+                  description: 'Nonempty exported-key translations.'
+                  items:
+                    type: object
+                    properties:
+                      key:
+                        type: string
+                        description: 'Exported items[].key unchanged.'
+                        examples:
+                          - pages.feedback.questions.service_rating.title
+                      translations:
+                        type: object
+                        description: 'Nonempty map of language keys to nonempty strings.'
+                        properties: {}
+                        examples:
+                          -
+                            ru: 'Как вы оцениваете обслуживание?'
+                    required:
+                      - key
+                      - translations
+                  examples:
+                    -
+                      -
+                        key: pages.feedback.questions.service_rating.title
+                        translations:
+                          ru: 'Как вы оцениваете обслуживание?'
+                note:
+                  type:
+                    - string
+                    - 'null'
+                  description: 'Nullable note <=255 characters.'
+                  examples:
+                    - 'Reviewed Russian translation'
+              required:
+                - source_language
+                - supported_languages
+                - default_language
+                - translations
+    parameters:
+      -
+        in: path
+        name: survey
+        description: 'Survey UUID.'
+        required: true
+        schema:
+          type: string
+          examples:
+            - 11111111-1111-4111-8111-111111111111
+  '/api/external/surveys/{survey}/revisions/latest':
+    get:
+      summary: 'Read the latest revision'
+      operationId: readTheLatestRevision
+      description: "Requires a valid bearer key, with no specific role (unlike the editor-only external routes). Survey ownership or an explicit\nappAdmin/surveyAdmin key role is still required. No revision means data:null, not an error; the effective sequence is then 0.\nRevision actor IDs and note can be null; validation is null. This is not history or rollback. Rate limits and retry headers: workflow.md."
+      parameters: []
+      responses:
+        200:
+          description: ''
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  -
+                    description: 'Latest revision'
+                    type: object
+                    properties:
+                      success:
+                        type: boolean
+                        examples:
+                          - true
+                      message:
+                        type: string
+                        examples:
+                          - 'Latest survey revision retrieved successfully'
+                      data:
+                        type: object
+                        properties:
+                          revision_id:
+                            type: string
+                            examples:
+                              - 33333333-3333-4333-8333-333333333333
+                          sequence:
+                            type: integer
+                            examples:
+                              - 1
+                          source:
+                            type: string
+                            examples:
+                              - external_api
+                          actor:
+                            type: object
+                            properties:
+                              user_id:
+                                type:
+                                  - integer
+                                  - 'null'
+                                examples:
+                                  - 1
+                              api_key_id:
+                                type:
+                                  - string
+                                  - 'null'
+                                examples:
+                                  - 22222222-2222-4222-8222-222222222222
+                          survey:
+                            type: object
+                            properties:
+                              id:
+                                type: string
+                                examples:
+                                  - 11111111-1111-4111-8111-111111111111
+                              snapshot:
+                                type: object
+                                additionalProperties: true
+                          validation:
+                            type:
+                              - string
+                              - 'null'
+                            examples:
+                              - null
+                          diff:
+                            type: array
+                            items:
+                              type: object
+                              properties:
+                                entity:
+                                  type: string
+                                  examples:
+                                    - page
+                                action:
+                                  type: string
+                                  examples:
+                                    - created
+                                target:
+                                  type: string
+                                  examples:
+                                    - feedback
+                                fields:
+                                  type: array
+                                  examples:
+                                    - []
+                            examples:
+                              -
+                                -
+                                  entity: page
+                                  action: created
+                                  target: feedback
+                                  fields: []
+                          is_durable:
+                            type: boolean
+                            examples:
+                              - false
+                          note:
+                            type:
+                              - string
+                              - 'null'
+                            examples:
+                              - null
+                          created_at:
+                            type: string
+                            examples:
+                              - '2026-01-01T00:00:00.000000Z'
+                    examples:
+                      -
+                        success: true
+                        message: 'Latest survey revision retrieved successfully'
+                        data:
+                          revision_id: 33333333-3333-4333-8333-333333333333
+                          sequence: 1
+                          source: external_api
+                          actor:
+                            user_id: 1
+                            api_key_id: 22222222-2222-4222-8222-222222222222
+                          survey:
+                            id: 11111111-1111-4111-8111-111111111111
+                            snapshot:
+                              pages:
+                                -
+                                  name: feedback
+                                  elements: []
+                          validation: null
+                          diff:
+                            -
+                              entity: page
+                              action: created
+                              target: feedback
+                              fields: []
+                          is_durable: false
+                          note: null
+                          created_at: '2026-01-01T00:00:00.000000Z'
+                  -
+                    description: 'No revision'
+                    type: object
+                    properties:
+                      success:
+                        type: boolean
+                        examples:
+                          - true
+                      message:
+                        type: string
+                        examples:
+                          - 'No survey revision exists for this survey yet.'
+                      data:
+                        type:
+                          - string
+                          - 'null'
+                        examples:
+                          - null
+                    examples:
+                      -
+                        success: true
+                        message: 'No survey revision exists for this survey yet.'
+                        data: null
+        401:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    examples:
+                      - false
+                  message:
+                    type: string
+                    examples:
+                      - 'Invalid API key'
+                examples:
+                  -
+                    success: false
+                    message: 'Invalid API key'
+        403:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    examples:
+                      - false
+                  message:
+                    type: string
+                    examples:
+                      - Forbidden
+                examples:
+                  -
+                    success: false
+                    message: Forbidden
+        404:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    examples:
+                      - 'Survey not found.'
+                examples:
+                  -
+                    message: 'Survey not found.'
+        429:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    examples:
+                      - false
+                  message:
+                    type: string
+                    examples:
+                      - 'Too Many Attempts.'
+                examples:
+                  -
+                    success: false
+                    message: 'Too Many Attempts.'
+      tags:
+        - 'External API'
+    parameters:
+      -
+        in: path
+        name: survey
+        description: 'Survey UUID.'
+        required: true
+        schema:
+          type: string
+          examples:
+            - 11111111-1111-4111-8111-111111111111
+  '/api/external/surveys/{survey}/participants':
+    post:
+      summary: 'Register one participant'
+      operationId: registerOneParticipant
+      description: "Requires editor and survey ownership or an explicit appAdmin/surveyAdmin key role. Same-survey token replay returns 200\nwithout updating details; creation returns 201, pending status and default max_responses 1. Other-survey token conflicts return 409.\nLaravel field-validation 422 has no success property. Rate limits and retry headers: workflow.md."
+      parameters: []
+      responses:
+        200:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    examples:
+                      - true
+                  message:
+                    type: string
+                    examples:
+                      - 'Participant registered successfully'
+                  data:
+                    type: object
+                    properties:
+                      participant:
+                        type: object
+                        properties:
+                          id:
+                            type: string
+                            examples:
+                              - 44444444-4444-4444-8444-444444444444
+                          survey_id:
+                            type: string
+                            examples:
+                              - 11111111-1111-4111-8111-111111111111
+                          token:
+                            type: string
+                            examples:
+                              - synthetic-participant-001
+                          language:
+                            type: string
+                            examples:
+                              - en
+                          email:
+                            type:
+                              - string
+                              - 'null'
+                            examples:
+                              - participant@example.invalid
+                          name:
+                            type:
+                              - string
+                              - 'null'
+                            examples:
+                              - 'Example Participant'
+                          status:
+                            type: string
+                            examples:
+                              - pending
+                          max_responses:
+                            type: integer
+                            examples:
+                              - 1
+                          expires_at:
+                            type:
+                              - string
+                              - 'null'
+                            examples:
+                              - '2030-01-01T00:00:00.000000Z'
+                      already_registered:
+                        type: boolean
+                        examples:
+                          - true
+                examples:
+                  -
+                    success: true
+                    message: 'Participant registered successfully'
+                    data:
+                      participant:
+                        id: 44444444-4444-4444-8444-444444444444
+                        survey_id: 11111111-1111-4111-8111-111111111111
+                        token: synthetic-participant-001
+                        language: en
+                        email: participant@example.invalid
+                        name: 'Example Participant'
+                        status: pending
+                        max_responses: 1
+                        expires_at: '2030-01-01T00:00:00.000000Z'
+                      already_registered: true
+        201:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    examples:
+                      - true
+                  message:
+                    type: string
+                    examples:
+                      - 'Participant registered successfully'
+                  data:
+                    type: object
+                    properties:
+                      participant:
+                        type: object
+                        properties:
+                          id:
+                            type: string
+                            examples:
+                              - 44444444-4444-4444-8444-444444444444
+                          survey_id:
+                            type: string
+                            examples:
+                              - 11111111-1111-4111-8111-111111111111
+                          token:
+                            type: string
+                            examples:
+                              - synthetic-participant-001
+                          language:
+                            type: string
+                            examples:
+                              - en
+                          email:
+                            type:
+                              - string
+                              - 'null'
+                            examples:
+                              - participant@example.invalid
+                          name:
+                            type:
+                              - string
+                              - 'null'
+                            examples:
+                              - 'Example Participant'
+                          status:
+                            type: string
+                            examples:
+                              - pending
+                          max_responses:
+                            type: integer
+                            examples:
+                              - 1
+                          expires_at:
+                            type:
+                              - string
+                              - 'null'
+                            examples:
+                              - '2030-01-01T00:00:00.000000Z'
+                      already_registered:
+                        type: boolean
+                        examples:
+                          - false
+                examples:
+                  -
+                    success: true
+                    message: 'Participant registered successfully'
+                    data:
+                      participant:
+                        id: 44444444-4444-4444-8444-444444444444
+                        survey_id: 11111111-1111-4111-8111-111111111111
+                        token: synthetic-participant-001
+                        language: en
+                        email: participant@example.invalid
+                        name: 'Example Participant'
+                        status: pending
+                        max_responses: 1
+                        expires_at: '2030-01-01T00:00:00.000000Z'
+                      already_registered: false
+        401:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    examples:
+                      - false
+                  message:
+                    type: string
+                    examples:
+                      - 'Invalid API key'
+                examples:
+                  -
+                    success: false
+                    message: 'Invalid API key'
+        403:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    examples:
+                      - false
+                  message:
+                    type: string
+                    examples:
+                      - Forbidden
+                examples:
+                  -
+                    success: false
+                    message: Forbidden
+        404:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    examples:
+                      - 'Survey not found.'
+                examples:
+                  -
+                    message: 'Survey not found.'
+        409:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    examples:
+                      - false
+                  message:
+                    type: string
+                    examples:
+                      - 'Token already belongs to another survey'
+                  errors:
+                    type: object
+                    properties:
+                      error_code:
+                        type: string
+                        examples:
+                          - token_already_assigned_to_other_survey
+                examples:
+                  -
+                    success: false
+                    message: 'Token already belongs to another survey'
+                    errors:
+                      error_code: token_already_assigned_to_other_survey
+        422:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    examples:
+                      - 'The token field is required.'
+                  errors:
+                    type: object
+                    properties:
+                      token:
+                        type: array
+                        items:
+                          type: string
+                        examples:
+                          -
+                            - 'The token field is required.'
+                examples:
+                  -
+                    message: 'The token field is required.'
+                    errors:
+                      token:
+                        - 'The token field is required.'
+        429:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    examples:
+                      - false
+                  message:
+                    type: string
+                    examples:
+                      - 'Too Many Attempts.'
+                examples:
+                  -
+                    success: false
+                    message: 'Too Many Attempts.'
+      tags:
+        - 'External API'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                token:
+                  type: string
+                  description: 'Globally unique token, maximum 255 characters.'
+                  examples:
+                    - synthetic-participant-001
+                language:
+                  type: string
+                  description: 'Maximum 10 characters.'
+                  examples:
+                    - en
+                email:
+                  type:
+                    - string
+                    - 'null'
+                  description: 'Nullable email, maximum 255 characters.'
+                  examples:
+                    - participant@example.invalid
+                name:
+                  type:
+                    - string
+                    - 'null'
+                  description: 'Nullable name, maximum 255 characters.'
+                  examples:
+                    - 'Example Participant'
+                expires_at:
+                  type:
+                    - string
+                    - 'null'
+                  description: 'Nullable date.'
+                  examples:
+                    - '2030-01-01T00:00:00Z'
+                max_responses:
+                  type:
+                    - integer
+                    - 'null'
+                  description: 'Nullable integer >=1; default 1.'
+                  examples:
+                    - 1
+              required:
+                - token
+                - language
+    parameters:
+      -
+        in: path
+        name: survey
+        description: 'Survey UUID.'
+        required: true
+        schema:
+          type: string
+          examples:
+            - 11111111-1111-4111-8111-111111111111
+  '/api/external/surveys/{survey}/participants/bulk':
+    post:
+      summary: 'Register participants in bulk'
+      operationId: registerParticipantsInBulk
+      description: "Requires editor and survey ownership or an explicit appAdmin/surveyAdmin key role. Duplicate payload tokens fail 422.\nValid batches return 200 with per-item conflicts, not an atomic all-or-nothing result. Replays do not update details.\nEvery item has the single-participant constraints. Rate limits and retry headers: workflow.md."
+      parameters: []
+      responses:
+        200:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    examples:
+                      - true
+                  message:
+                    type: string
+                    examples:
+                      - 'Participants processed successfully'
+                  data:
+                    type: object
+                    properties:
+                      total:
+                        type: integer
+                        examples:
+                          - 3
+                      created:
+                        type: integer
+                        examples:
+                          - 1
+                      already_registered:
+                        type: integer
+                        examples:
+                          - 1
+                      failed:
+                        type: integer
+                        examples:
+                          - 1
+                      participants:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            token:
+                              type: string
+                              examples:
+                                - synthetic-participant-001
+                            success:
+                              type: boolean
+                              examples:
+                                - true
+                            already_registered:
+                              type: boolean
+                              examples:
+                                - false
+                        examples:
+                          -
+                            -
+                              token: synthetic-participant-001
+                              success: true
+                              already_registered: false
+                            -
+                              token: synthetic-participant-002
+                              success: true
+                              already_registered: true
+                            -
+                              token: synthetic-participant-003
+                              success: false
+                              error_code: token_already_assigned_to_other_survey
+                              message: 'Token already belongs to another survey'
+                examples:
+                  -
+                    success: true
+                    message: 'Participants processed successfully'
+                    data:
+                      total: 3
+                      created: 1
+                      already_registered: 1
+                      failed: 1
+                      participants:
+                        -
+                          token: synthetic-participant-001
+                          success: true
+                          already_registered: false
+                        -
+                          token: synthetic-participant-002
+                          success: true
+                          already_registered: true
+                        -
+                          token: synthetic-participant-003
+                          success: false
+                          error_code: token_already_assigned_to_other_survey
+                          message: 'Token already belongs to another survey'
+        401:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    examples:
+                      - false
+                  message:
+                    type: string
+                    examples:
+                      - 'Invalid API key'
+                examples:
+                  -
+                    success: false
+                    message: 'Invalid API key'
+        403:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    examples:
+                      - false
+                  message:
+                    type: string
+                    examples:
+                      - Forbidden
+                examples:
+                  -
+                    success: false
+                    message: Forbidden
+        404:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    examples:
+                      - 'Survey not found.'
+                examples:
+                  -
+                    message: 'Survey not found.'
+        422:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    examples:
+                      - 'Duplicate participant tokens in payload are not allowed.'
+                  errors:
+                    type: object
+                    properties:
+                      participants:
+                        type: array
+                        items:
+                          type: string
+                        examples:
+                          -
+                            - 'Duplicate participant tokens in payload are not allowed.'
+                examples:
+                  -
+                    message: 'Duplicate participant tokens in payload are not allowed.'
+                    errors:
+                      participants:
+                        - 'Duplicate participant tokens in payload are not allowed.'
+        429:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    examples:
+                      - false
+                  message:
+                    type: string
+                    examples:
+                      - 'Too Many Attempts.'
+                examples:
+                  -
+                    success: false
+                    message: 'Too Many Attempts.'
+      tags:
+        - 'External API'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                participants:
+                  type: array
+                  description: 'Nonempty batch with distinct tokens.'
+                  items:
+                    type: object
+                    properties:
+                      token:
+                        type: string
+                        description: 'Maximum 255 characters.'
+                        examples:
+                          - synthetic-participant-001
+                      language:
+                        type: string
+                        description: 'Maximum 10 characters.'
+                        examples:
+                          - en
+                      email:
+                        type:
+                          - string
+                          - 'null'
+                        description: 'Nullable email <=255 characters.'
+                        examples:
+                          - participant@example.invalid
+                      name:
+                        type:
+                          - string
+                          - 'null'
+                        description: 'Nullable string <=255 characters.'
+                        examples:
+                          - 'Example Participant'
+                      expires_at:
+                        type:
+                          - string
+                          - 'null'
+                        description: 'Nullable date.'
+                        examples:
+                          - '2030-01-01T00:00:00Z'
+                      max_responses:
+                        type:
+                          - integer
+                          - 'null'
+                        description: 'Nullable >=1, default 1.'
+                        examples:
+                          - 1
+                    required:
+                      - token
+                      - language
+                  examples:
+                    -
+                      -
+                        token: synthetic-participant-001
+                        language: en
+              required:
+                - participants
+    parameters:
+      -
+        in: path
+        name: survey
+        description: 'Survey UUID.'
+        required: true
+        schema:
+          type: string
+          examples:
+            - 11111111-1111-4111-8111-111111111111
+  '/api/external/surveys/{survey}/participants/{token}/exists':
+    get:
+      summary: 'Check participant registration in this survey'
+      operationId: checkParticipantRegistrationInThisSurvey
+      description: "Requires editor and survey ownership or an explicit appAdmin/surveyAdmin key role. False includes a token registered elsewhere;\nthis endpoint does not expose the other survey. Rate limits and retry headers: workflow.md."
+      parameters: []
+      responses:
+        200:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    examples:
+                      - true
+                  message:
+                    type: string
+                    examples:
+                      - Success
+                  data:
+                    type: object
+                    properties:
+                      registered:
+                        type: boolean
+                        examples:
+                          - true
+                examples:
+                  -
+                    success: true
+                    message: Success
+                    data:
+                      registered: true
+        401:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    examples:
+                      - false
+                  message:
+                    type: string
+                    examples:
+                      - 'Invalid API key'
+                examples:
+                  -
+                    success: false
+                    message: 'Invalid API key'
+        403:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    examples:
+                      - false
+                  message:
+                    type: string
+                    examples:
+                      - Forbidden
+                examples:
+                  -
+                    success: false
+                    message: Forbidden
+        404:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    examples:
+                      - 'Survey not found.'
+                examples:
+                  -
+                    message: 'Survey not found.'
+        429:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    examples:
+                      - false
+                  message:
+                    type: string
+                    examples:
+                      - 'Too Many Attempts.'
+                examples:
+                  -
+                    success: false
+                    message: 'Too Many Attempts.'
+      tags:
+        - 'External API'
+    parameters:
+      -
+        in: path
+        name: survey
+        description: 'Survey UUID.'
+        required: true
+        schema:
+          type: string
+          examples:
+            - 11111111-1111-4111-8111-111111111111
+      -
+        in: path
+        name: token
+        description: 'Exact token, URL-encoded as a single segment (no slash).'
+        required: true
+        schema:
+          type: string
+          examples:
+            - synthetic-participant-001
+x-source-contract-sha256: 3883617f7f21d8c33f8f78da0f66fa971b18074ef2278ca85a4ebf4fd04e533f
