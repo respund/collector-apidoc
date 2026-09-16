@@ -1,0 +1,183 @@
+{
+  "guide_version": 1,
+  "surveyjs_version": "3.0.2",
+  "scope": "Collector-specific SurveyJS behavior; not a full upstream API reference",
+  "general": {
+    "schema_format": "SurveyJS JSON",
+    "native_vs_extension": "SurveyJS owns the standard schema and rendering model. autoAdvanceIf is a Collector extension and is not an upstream SurveyJS property.",
+    "extensions_are_not_upstream_properties": true,
+    "renderAs": "renderAs selects a renderer for the same native question type; a non-native value requires the matching question package.",
+    "package_availability": "Documentation is not deployment availability discovery. Confirm that a required package is installed, enabled and valid before applying a renderAs value.",
+    "auto_advance_priority": "If any question has a non-empty autoAdvanceIf, Collector disables SurveyJS survey-level autoAdvanceEnabled (including its goNextPageAutomatic alias) for that model. If none do, the schema's survey-level setting is unchanged.",
+    "runtime": "Live surveys, public and admin previews, and unsaved schema previews use the shared Collector SurveyJS runtime. Live answer persistence remains separate from preview rendering.",
+    "html_safety": "The shared runtime sanitizes final SurveyJS HTML and Markdown output with its configured DOMPurify protection. Schema HTML is not an execution API.",
+    "coverage": "This is the first detailed Collector extension guide for radiogroup questions, not an encyclopedia of every SurveyJS property or question type."
+  },
+  "question_types": {
+    "radiogroup": {
+      "standard_reference": "https://surveyjs.io/form-library/documentation/api-reference/radio-button-question-model",
+      "supported_renderers": [
+        "native",
+        "cards"
+      ],
+      "extensions": {
+        "autoAdvanceIf": {
+          "type": "string",
+          "default": "",
+          "max_length": 4096,
+          "delay_ms": 300,
+          "expression_engine": "SurveyJS",
+          "rules": [
+            "The property is accepted only on type radiogroup, including a radiogroup rendered with renderAs cards.",
+            "A missing property or empty string disables the extension; the string true enables it for every otherwise permitted native radio selection.",
+            "Any other non-empty string is evaluated as a SurveyJS condition against the current survey answers.",
+            "A JSON boolean, null, number, array or object is invalid; do not coerce it to a string.",
+            "The expression is checked again after 300 ms and immediately before native nextPage(). Invalid expressions fail closed and manual navigation remains available.",
+            "Auto-advance requires one visible, answerable, editable question on the current page, a changed native pointer or touch radio selection, a non-empty answer, no active Other/comment clarification, a following visible page and successful native SurveyJS validation.",
+            "Asynchronous validation is guarded: if the answer, page, visibility, locale or editability changes while it runs, its later automatic navigation or completion is vetoed; custom page-changing handlers leave this extension manual.",
+            "The feature does not complete the last page, does not react to keyboard arrows or Space, restored or prefilled data, triggers, expressions, programmatic setValue, language changes or dynamic-panel template questions.",
+            "questionsOnPageMode inputPerPage, questionPerPage and questionOnPage are outside this first version; continue with native manual navigation."
+          ],
+          "conditions": [
+            {
+              "expression": "true",
+              "meaning": "Unconditional after a changed native radio selection."
+            },
+            {
+              "expression": "{visit_again} = 'yes'",
+              "meaning": "Advance only when the selected value is yes."
+            },
+            {
+              "expression": "{plan} = 'standard' and {consent} = true",
+              "meaning": "SurveyJS boolean and comparison expressions may combine answer conditions."
+            }
+          ],
+          "localised_help": {
+            "en": "Selecting an answer will automatically move to the next page.",
+            "et": "Vastuse valimine viib automaatselt järgmisele lehele.",
+            "ru": "Выбор ответа автоматически переведёт на следующую страницу."
+          },
+          "examples": [
+            {
+              "label": "unconditional",
+              "question": {
+                "type": "radiogroup",
+                "name": "visit_again",
+                "choices": [
+                  "yes",
+                  "no"
+                ],
+                "autoAdvanceIf": "true"
+              }
+            },
+            {
+              "label": "conditional",
+              "question": {
+                "type": "radiogroup",
+                "name": "visit_again",
+                "choices": [
+                  "yes",
+                  "no"
+                ],
+                "autoAdvanceIf": "{visit_again} = 'yes'"
+              }
+            },
+            {
+              "label": "cards renderer",
+              "question": {
+                "type": "radiogroup",
+                "name": "layout_choice",
+                "choices": [
+                  "compact",
+                  "wide"
+                ],
+                "renderAs": "cards",
+                "autoAdvanceIf": "true"
+              },
+              "required_package": "core/radiogroup-cards",
+              "availability": "must be confirmed for the deployment"
+            }
+          ]
+        }
+      },
+      "renderers": {
+        "native": {
+          "schema": {
+            "type": "radiogroup"
+          },
+          "availability": "SurveyJS native support is part of the application runtime."
+        },
+        "cards": {
+          "schema": {
+            "type": "radiogroup",
+            "renderAs": "cards"
+          },
+          "required_package": "core/radiogroup-cards",
+          "availability": "must be confirmed for the deployment",
+          "behavior": "Cards delegates to the native radiogroup; SurveyJS continues to own inputs, values, validation, comments, Other, keyboard behavior and accessibility."
+        }
+      }
+    }
+  },
+  "examples": {
+    "two_page_survey": {
+      "description": "Complete synthetic SurveyJS schema: the first page can advance after yes; the second page remains a normal final page.",
+      "schema": {
+        "title": "Synthetic visit survey",
+        "pages": [
+          {
+            "name": "welcome",
+            "title": "Welcome",
+            "elements": [
+              {
+                "type": "radiogroup",
+                "name": "visit_again",
+                "title": "Would you visit again?",
+                "choices": [
+                  {
+                    "value": "yes",
+                    "text": "Yes"
+                  },
+                  {
+                    "value": "no",
+                    "text": "No"
+                  }
+                ],
+                "autoAdvanceIf": "{visit_again} = 'yes'"
+              }
+            ]
+          },
+          {
+            "name": "details",
+            "title": "Details",
+            "elements": [
+              {
+                "type": "comment",
+                "name": "note",
+                "title": "Anything else?"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "update_question_props_dry_run": {
+      "description": "Synthetic guarded mutation that adds the conditional extension without changing the survey until apply is explicitly requested.",
+      "request": {
+        "operation": "update_question_props",
+        "target": {
+          "page": "welcome",
+          "question": "visit_again"
+        },
+        "payload": {
+          "props": {
+            "autoAdvanceIf": "{visit_again} = 'yes'"
+          }
+        },
+        "dry_run": true,
+        "expected_sequence": 3
+      },
+      "workflow": "Review data.validation and data.diff, then apply the identical request with the same current expected_sequence only after approval; read back agent-context afterward."
+    }
+  }
+}

@@ -577,6 +577,384 @@ paths:
           type: string
           examples:
             - 11111111-1111-4111-8111-111111111111
+  /api/external/surveyjs-guide:
+    get:
+      summary: 'Get the Collector SurveyJS extension guide'
+      operationId: getTheCollectorSurveyJSExtensionGuide
+      description: "This read-only guide is not tied to a survey. It describes the pinned SurveyJS runtime, the Collector-only\nautoAdvanceIf extension, and renderer/package caveats. Use the optional question_type filter to return one entry."
+      parameters:
+        -
+          in: query
+          name: question_type
+          description: 'Filter the guide to one documented question type.'
+          required: false
+          schema:
+            type: string
+            description: 'Filter the guide to one documented question type.'
+            examples:
+              - radiogroup
+      responses:
+        200:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+                  data:
+                    type: object
+                    properties:
+                      guide_version:
+                        type: integer
+                      surveyjs_version:
+                        type: string
+                      scope:
+                        type: string
+                      general:
+                        type: object
+                        properties:
+                          schema_format:
+                            type: string
+                          native_vs_extension:
+                            type: string
+                          extensions_are_not_upstream_properties:
+                            type: boolean
+                          renderAs:
+                            type: string
+                          package_availability:
+                            type: string
+                          auto_advance_priority:
+                            type: string
+                          runtime:
+                            type: string
+                          html_safety:
+                            type: string
+                          coverage:
+                            type: string
+                      question_types:
+                        type: object
+                        properties:
+                          radiogroup:
+                            type: object
+                            properties:
+                              standard_reference:
+                                type: string
+                              supported_renderers:
+                                type: array
+                                items:
+                                  type: string
+                              extensions:
+                                type: object
+                                properties:
+                                  autoAdvanceIf:
+                                    type: object
+                                    properties:
+                                      type: { type: string }
+                                      default: { type: string }
+                                      max_length: { type: integer }
+                                      delay_ms: { type: integer }
+                                      expression_engine: { type: string }
+                                      rules: { type: array, items: { type: string } }
+                                      conditions: { type: array, items: { type: object, properties: { expression: { type: string }, meaning: { type: string } } } }
+                                      localised_help: { type: object, properties: { en: { type: string }, et: { type: string }, ru: { type: string } } }
+                                      examples: { type: array, items: { type: object, properties: { label: { type: string }, question: { type: object, properties: { type: { type: string }, name: { type: string }, choices: { type: array, items: { type: string } }, autoAdvanceIf: { type: string } } } } } }
+                              renderers:
+                                type: object
+                                properties:
+                                  native:
+                                    type: object
+                                    properties:
+                                      schema: { type: object, properties: { type: { type: string } } }
+                                      availability: { type: string }
+                                  cards:
+                                    type: object
+                                    properties:
+                                      schema: { type: object, properties: { type: { type: string }, renderAs: { type: string } } }
+                                      required_package: { type: string }
+                                      availability: { type: string }
+                                      behavior: { type: string }
+                      examples:
+                        type: object
+                        properties:
+                          two_page_survey:
+                            type: object
+                            properties:
+                              description:
+                                type: string
+                              schema:
+                                type: object
+                                properties:
+                                  title:
+                                    type: string
+                                  pages:
+                                    type: array
+                                    items:
+                                      type: object
+                                      properties: { name: { type: string }, title: { type: string }, elements: { type: array, items: { type: object, properties: { type: { type: string }, name: { type: string }, title: { type: string }, choices: { type: array, items: { type: object, properties: { value: { type: string }, text: { type: string } } } }, autoAdvanceIf: { type: string } } } } }
+                          update_question_props_dry_run:
+                            type: object
+                            properties:
+                              description:
+                                type: string
+                              request:
+                                type: object
+                                properties:
+                                  operation:
+                                    type: string
+                                  target:
+                                    type: object
+                                    properties:
+                                      page: { type: string }
+                                      question: { type: string }
+                                  payload:
+                                    type: object
+                                    properties:
+                                      props: { type: object, properties: { autoAdvanceIf: { type: string } } }
+                                  dry_run:
+                                    type: boolean
+                                  expected_sequence:
+                                    type: integer
+                              workflow:
+                                type: string
+                examples:
+                  -
+                    success: true
+                    message: 'SurveyJS guide retrieved successfully'
+                    data:
+                      guide_version: 1
+                      surveyjs_version: 3.0.2
+                      scope: 'Collector-specific SurveyJS behavior; not a full upstream API reference'
+                      general:
+                        schema_format: 'SurveyJS JSON'
+                        native_vs_extension: 'SurveyJS owns the standard schema and rendering model. autoAdvanceIf is a Collector extension and is not an upstream SurveyJS property.'
+                        extensions_are_not_upstream_properties: true
+                        renderAs: 'renderAs selects a renderer for the same native question type; a non-native value requires the matching question package.'
+                        package_availability: 'Documentation is not deployment availability discovery. Confirm that a required package is installed, enabled and valid before applying a renderAs value.'
+                        auto_advance_priority: "If any question has a non-empty autoAdvanceIf, Collector disables SurveyJS survey-level autoAdvanceEnabled (including its goNextPageAutomatic alias) for that model. If none do, the schema's survey-level setting is unchanged."
+                        runtime: 'Live surveys, public and admin previews, and unsaved schema previews use the shared Collector SurveyJS runtime. Live answer persistence remains separate from preview rendering.'
+                        html_safety: 'The shared runtime sanitizes final SurveyJS HTML and Markdown output with its configured DOMPurify protection. Schema HTML is not an execution API.'
+                        coverage: 'This is the first detailed Collector extension guide for radiogroup questions, not an encyclopedia of every SurveyJS property or question type.'
+                      question_types:
+                        radiogroup:
+                          standard_reference: 'https://surveyjs.io/form-library/documentation/api-reference/radio-button-question-model'
+                          supported_renderers:
+                            - native
+                            - cards
+                          extensions:
+                            autoAdvanceIf:
+                              type: string
+                              default: ''
+                              max_length: 4096
+                              delay_ms: 300
+                              expression_engine: SurveyJS
+                              rules:
+                                - 'The property is accepted only on type radiogroup, including a radiogroup rendered with renderAs cards.'
+                                - 'A missing property or empty string disables the extension; the string true enables it for every otherwise permitted native radio selection.'
+                                - 'Any other non-empty string is evaluated as a SurveyJS condition against the current survey answers.'
+                                - 'A JSON boolean, null, number, array or object is invalid; do not coerce it to a string.'
+                                - 'The expression is checked again after 300 ms and immediately before native nextPage(). Invalid expressions fail closed and manual navigation remains available.'
+                                - 'Auto-advance requires one visible, answerable, editable question on the current page, a changed native pointer or touch radio selection, a non-empty answer, no active Other/comment clarification, a following visible page and successful native SurveyJS validation.'
+                                - 'Asynchronous validation is guarded: if the answer, page, visibility, locale or editability changes while it runs, its later automatic navigation or completion is vetoed; custom page-changing handlers leave this extension manual.'
+                                - 'The feature does not complete the last page, does not react to keyboard arrows or Space, restored or prefilled data, triggers, expressions, programmatic setValue, language changes or dynamic-panel template questions.'
+                                - 'questionsOnPageMode inputPerPage, questionPerPage and questionOnPage are outside this first version; continue with native manual navigation.'
+                              conditions:
+                                -
+                                  expression: 'true'
+                                  meaning: 'Unconditional after a changed native radio selection.'
+                                -
+                                  expression: "{visit_again} = 'yes'"
+                                  meaning: 'Advance only when the selected value is yes.'
+                                -
+                                  expression: "{plan} = 'standard' and {consent} = true"
+                                  meaning: 'SurveyJS boolean and comparison expressions may combine answer conditions.'
+                              localised_help:
+                                en: 'Selecting an answer will automatically move to the next page.'
+                                et: 'Vastuse valimine viib automaatselt järgmisele lehele.'
+                                ru: 'Выбор ответа автоматически переведёт на следующую страницу.'
+                              examples:
+                                -
+                                  label: unconditional
+                                  question:
+                                    type: radiogroup
+                                    name: visit_again
+                                    choices:
+                                      - 'yes'
+                                      - 'no'
+                                    autoAdvanceIf: 'true'
+                                -
+                                  label: conditional
+                                  question:
+                                    type: radiogroup
+                                    name: visit_again
+                                    choices:
+                                      - 'yes'
+                                      - 'no'
+                                    autoAdvanceIf: "{visit_again} = 'yes'"
+                                -
+                                  label: 'cards renderer'
+                                  question:
+                                    type: radiogroup
+                                    name: layout_choice
+                                    choices:
+                                      - compact
+                                      - wide
+                                    renderAs: cards
+                                    autoAdvanceIf: 'true'
+                                  required_package: core/radiogroup-cards
+                                  availability: 'must be confirmed for the deployment'
+                          renderers:
+                            native:
+                              schema:
+                                type: radiogroup
+                              availability: 'SurveyJS native support is part of the application runtime.'
+                            cards:
+                              schema:
+                                type: radiogroup
+                                renderAs: cards
+                              required_package: core/radiogroup-cards
+                              availability: 'must be confirmed for the deployment'
+                              behavior: 'Cards delegates to the native radiogroup; SurveyJS continues to own inputs, values, validation, comments, Other, keyboard behavior and accessibility.'
+                      examples:
+                        two_page_survey:
+                          description: 'Complete synthetic SurveyJS schema: the first page can advance after yes; the second page remains a normal final page.'
+                          schema:
+                            title: 'Synthetic visit survey'
+                            pages:
+                              -
+                                name: welcome
+                                title: Welcome
+                                elements:
+                                  -
+                                    type: radiogroup
+                                    name: visit_again
+                                    title: 'Would you visit again?'
+                                    choices:
+                                      - { value: 'yes', text: 'Yes' }
+                                      - { value: 'no', text: 'No' }
+                                    autoAdvanceIf: "{visit_again} = 'yes'"
+                              -
+                                name: details
+                                title: Details
+                                elements:
+                                  -
+                                    type: comment
+                                    name: note
+                                    title: 'Anything else?'
+                        update_question_props_dry_run:
+                          description: 'Synthetic guarded mutation that adds the conditional extension without changing the survey until apply is explicitly requested.'
+                          request:
+                            operation: update_question_props
+                            target:
+                              page: welcome
+                              question: visit_again
+                            payload:
+                              props:
+                                autoAdvanceIf: "{visit_again} = 'yes'"
+                            dry_run: true
+                            expected_sequence: 3
+                          workflow: 'Review data.validation and data.diff, then apply the identical request with the same current expected_sequence only after approval; read back agent-context afterward.'
+        401:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    examples:
+                      - false
+                  message:
+                    type: string
+                    examples:
+                      - 'Invalid API key'
+                examples:
+                  -
+                    success: false
+                    message: 'Invalid API key'
+        403:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    examples:
+                      - false
+                  message:
+                    type: string
+                    examples:
+                      - Forbidden
+                examples:
+                  -
+                    success: false
+                    message: Forbidden
+        422:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    examples:
+                      - 'SurveyJS guide is not available for this question type.'
+                  errors:
+                    type: object
+                    properties:
+                      question_type:
+                        type: array
+                        items:
+                          type: string
+                        examples:
+                          -
+                            - 'SurveyJS guide is not available for this question type.'
+                examples:
+                  -
+                    message: 'SurveyJS guide is not available for this question type.'
+                    errors:
+                      question_type:
+                        - 'SurveyJS guide is not available for this question type.'
+        429:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    examples:
+                      - false
+                  message:
+                    type: string
+                    examples:
+                      - 'Too Many Attempts.'
+                examples:
+                  -
+                    success: false
+                    message: 'Too Many Attempts.'
+      tags:
+        - 'External API'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                question_type:
+                  type: string
+                  description: ''
+                  examples:
+                    - architecto
   /api/external/surveys:
     post:
       summary: 'Create a draft survey'
@@ -1080,6 +1458,24 @@ paths:
                                 type: string
                                 examples:
                                   - POST
+                      documentation:
+                        type: object
+                        properties:
+                          surveyjs_guide:
+                            type: object
+                            properties:
+                              endpoint:
+                                type: string
+                                examples:
+                                  - /api/external/surveyjs-guide
+                              method:
+                                type: string
+                                examples:
+                                  - GET
+                              question_type_parameter:
+                                type: string
+                                examples:
+                                  - question_type
                 examples:
                   -
                     success: true
@@ -1136,6 +1532,11 @@ paths:
                         finalize:
                           endpoint: /api/external/surveys/11111111-1111-4111-8111-111111111111/finalize
                           method: POST
+                      documentation:
+                        surveyjs_guide:
+                          endpoint: /api/external/surveyjs-guide
+                          method: GET
+                          question_type_parameter: question_type
         401:
           description: ''
           content:
@@ -1403,6 +1804,25 @@ paths:
                                 type: string
                                 examples:
                                   - POST
+                      documentation:
+                        type: object
+                        properties:
+                          surveyjs_guide:
+                            type: object
+                            properties:
+                              endpoint:
+                                type: string
+                                examples:
+                                  - /api/external/surveyjs-guide
+                              method:
+                                type: string
+                                examples:
+                                  - GET
+                              question_type_parameter:
+                                type: string
+                                examples:
+                                  - question_type
+                            description: 'Read-only link to the authenticated SurveyJS extension guide.'
                 examples:
                   -
                     success: true
@@ -1459,6 +1879,11 @@ paths:
                         finalize:
                           endpoint: /api/external/surveys/11111111-1111-4111-8111-111111111111/finalize
                           method: POST
+                      documentation:
+                        surveyjs_guide:
+                          endpoint: /api/external/surveyjs-guide
+                          method: GET
+                          question_type_parameter: question_type
         401:
           description: ''
           content:
@@ -3689,4 +4114,4 @@ paths:
           type: string
           examples:
             - synthetic-participant-001
-x-source-contract-sha256: 3883617f7f21d8c33f8f78da0f66fa971b18074ef2278ca85a4ebf4fd04e533f
+x-source-contract-sha256: 124d13e3aff6802dd93fb7266f994cab6fe85691ebe41d1eac2f09f1a01d6cae

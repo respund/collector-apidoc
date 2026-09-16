@@ -1,12 +1,12 @@
 # External agent survey workflow
 
-Read [OpenAPI](openapi.yaml) for all 11 routes and [operations](operations.md) for complete mutation payloads. This reference uses synthetic data only. The server URL in OpenAPI is deliberately nonfunctional: obtain the actual deployment URL and an issued bearer key through the operator's approved secure channel. Never extract/mint keys or use SQL/application internals as shortcuts.
+Read [OpenAPI](openapi.yaml) for all 12 routes and [operations](operations.md) for complete mutation payloads. The [SurveyJS extension guide](surveyjs-guide.json) is the canonical reference for Collector-specific question behavior. This reference uses synthetic data only. The server URL in OpenAPI is deliberately nonfunctional: obtain the actual deployment URL and an issued bearer key through the operator's approved secure channel. Never extract/mint keys or use SQL/application internals as shortcuts.
 
 ## Authentication and errors
 
 Send `Authorization: Bearer <API_KEY>` and `Accept: application/json`; writes also need `Content-Type: application/json`. Health only proves availability, not authentication. Verify authorized access with GET `/api/external/surveys/{survey}/agent-context` (survey UUID) or GET `/api/external/surveys/by-alias/{alias}/agent-context`.
 
-Every listed route requires the exact `editor` API-key role except GET `/api/external/surveys/{survey}/revisions/latest`, which requires a valid key but no specific role. There is no implicit role hierarchy: an appAdmin/surveyAdmin key still needs editor on editor routes. Survey access requires the key's user to own the survey, or the key itself to have `appAdmin` or `surveyAdmin`; browser session identity never grants extra external access.
+Every listed route requires the exact `editor` API-key role except GET `/api/external/surveys/{survey}/revisions/latest`, which requires a valid key but no specific role. The authenticated agent-context response includes `data.documentation.surveyjs_guide`; fetch that linked guide before using Collector-specific properties or renderer values. There is no implicit role hierarchy: an appAdmin/surveyAdmin key still needs editor on editor routes. Survey access requires the key's user to own the survey, or the key itself to have `appAdmin` or `surveyAdmin`; browser session identity never grants extra external access.
 
 - 401: missing/malformed/invalid/revoked key, `{success:false,message}`.
 - 403: missing required key role or survey access, `{success:false,message}`.
@@ -14,6 +14,12 @@ Every listed route requires the exact `editor` API-key role except GET `/api/ext
 - 422: Laravel envelope validation is `{message,errors:{field:["..."]}}`, **without** `success`; controller schema/operation failures use `{success:false,message}` and sometimes `errors` (finalize has `errors.activation`). Do not flatten these shapes.
 - 409: mutation sequence conflict has `{success:false,message,errors:{expected_sequence:["..."],latest_sequence:4}}`; participant token conflict has `errors.error_code:"token_already_assigned_to_other_survey"`.
 - 429: `{success:false,message:"Too Many Attempts."}`. All external routes share 120 requests/minute per validated key; invalid/missing credentials share 60/minute per IP. Respect `Retry-After` seconds, `X-RateLimit-Limit`, `X-RateLimit-Remaining`, and on 429 `X-RateLimit-Reset` (Unix seconds). Normal middleware responses include limit/remaining; framework-thrown errors need not carry them.
+
+## SurveyJS extension guide
+
+GET `/api/external/surveyjs-guide` returns the pinned, public-safe Collector guide in the standard `{success:true,message,data}` envelope. Add `?question_type=radiogroup` to retain the version/general sections while filtering `data.question_types` to that documented type. A 422 for an undocumented type means only that no guide entry exists; it does not mean the SurveyJS type itself is unsupported. The guide covers `autoAdvanceIf`, its 300 ms/native-pointer/sole-question limits, and the `renderAs: "cards"` package prerequisite. Documentation never proves that `core/radiogroup-cards` is installed, enabled or valid on the target deployment.
+
+After fetching context, use the normal mutation sequence: dry-run → review `data.diff` and `data.validation` → apply the identical guarded request → read back. `update_question_props` is the supported way to add `autoAdvanceIf`; do not write survey content through SQL or application internals.
 
 ## 1. Create or resume
 

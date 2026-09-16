@@ -1,6 +1,6 @@
 # Generic survey mutations
 
-POST `/api/external/surveys/{survey}/mutations`; see [workflow](workflow.md) and [OpenAPI](openapi.yaml).
+POST `/api/external/surveys/{survey}/mutations`; see [workflow](workflow.md), [OpenAPI](openapi.yaml), and the [SurveyJS extension guide](surveyjs-guide.json).
 All examples are independent previews against a synthetic survey at sequence 3, not a batch to run blindly. Replace the sequence with the current effective sequence (0 if no revision). After preview and user-approved diff, send the same request with `dry_run:false`; read back before the next operation.
 
 Envelope: required `operation` (one of the twelve below), required nonempty `target` object; optional nullable `payload` object, `dry_run` boolean (default false), `expected_sequence` integer >= 0, `note` string <= 255. Never omit the guard in agent writes. Use `{"survey":true}` when the operation consumes no target; `{}` and `[]` fail Laravel's required rule. Invalid envelopes return Laravel 422 `{message,errors}`; invalid operations/snapshots return controller 422 `{success:false,message}`. Missing/ambiguous named references are 422, not HTTP resource 404. A stale guard returns 409; refetch rather than overwrite.
@@ -57,10 +57,10 @@ Requires destination feedback. `target.question`, if supplied, overrides payload
 
 ## update_question_props
 
-Requires an existing question; optional page disambiguates. Nonempty `payload.props` shallowly sets properties. Cannot include `name` (no rename); nested maps/arrays are replaced, not merged. The service also accepts properties directly in payload; prefer explicit props.
+Requires an existing question; optional page disambiguates. Nonempty `payload.props` shallowly sets properties. Cannot include `name` (no rename); nested maps/arrays are replaced, not merged. The service also accepts properties directly in payload; prefer explicit props. For the Collector-only `autoAdvanceIf` extension, use a string on a `radiogroup` only (empty disables it; maximum 4096 characters); consult the [SurveyJS extension guide](surveyjs-guide.json) for native-pointer, validation and renderer limits.
 
 ```json
-{"operation":"update_question_props","target":{"page":"feedback","question":"service_rating"},"payload":{"props":{"isRequired":true}},"dry_run":true,"expected_sequence":3}
+{"operation":"update_question_props","target":{"page":"feedback","question":"service_rating"},"payload":{"props":{"isRequired":true,"autoAdvanceIf":"{service_rating} = 'good'"}},"dry_run":true,"expected_sequence":3}
 ```
 
 ## move_question
