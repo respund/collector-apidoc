@@ -1,10 +1,10 @@
 # External agent survey workflow
 
-Read [OpenAPI](openapi.yaml) for all 12 routes and [operations](operations.md) for complete mutation payloads. The [SurveyJS extension guide](surveyjs-guide.json) is the canonical reference for Collector-specific question behavior. This reference uses synthetic data only. The server URL in OpenAPI is deliberately nonfunctional: obtain the actual deployment URL and an issued bearer key through the operator's approved secure channel. Never extract/mint keys or use SQL/application internals as shortcuts.
+Read [OpenAPI](openapi.yaml) for all 15 routes and [operations](operations.md) for complete mutation payloads. The [SurveyJS extension guide](surveyjs-guide.json) is the canonical reference for Collector-specific question behavior. This reference uses synthetic data only. The server URL in OpenAPI is deliberately nonfunctional: obtain the actual deployment URL and an issued bearer key through the operator's approved secure channel. Never extract/mint keys or use SQL/application internals as shortcuts.
 
 ## Authentication and errors
 
-Send `Authorization: Bearer <API_KEY>` and `Accept: application/json`; writes also need `Content-Type: application/json`. Health only proves availability, not authentication. Verify authorized access with GET `/api/external/surveys/{survey}/agent-context` (survey UUID) or GET `/api/external/surveys/by-alias/{alias}/agent-context`.
+Send `Authorization: Bearer <API_KEY>` and `Accept: application/json`; writes also need `Content-Type: application/json`. Health only proves availability, not authentication. Prefer GET `/api/external/surveys/{survey}/overview` (survey UUID) to verify authorized access without downloading the full schema. GET `/api/external/surveys/{survey}/agent-context` returns the full context; resolve an alias with GET `/api/external/surveys/by-alias/{alias}/agent-context` when the UUID is unknown.
 
 Every listed route requires the exact `editor` API-key role except GET `/api/external/surveys/{survey}/revisions/latest`, which requires a valid key but no specific role. The authenticated agent-context response includes `data.documentation.surveyjs_guide`; fetch that linked guide before using Collector-specific properties or renderer values. There is no implicit role hierarchy: an appAdmin/surveyAdmin key still needs editor on editor routes. Survey access requires the key's user to own the survey, or the key itself to have `appAdmin` or `surveyAdmin`; browser session identity never grants extra external access.
 
@@ -21,6 +21,27 @@ GET `/api/external/surveyjs-guide` returns the pinned, public-safe Collector gui
 
 After fetching context, use the normal mutation sequence: dry-run → review `data.diff` and `data.validation` → apply the identical guarded request → read back. `update_question_props` is the supported way to add `autoAdvanceIf`; do not write survey content through SQL or application internals.
 
+## Token-efficient reads and mutations
+
+Prefer these authenticated reads for focused edits; all require `editor` and the same owner/explicit manager-key access as agent-context:
+
+- GET `/api/external/surveys/{survey}/overview`: same survey metadata, latest_revision, publishability, workflow and documentation as agent-context, but **no snapshot**. Instead `data.outline` lists pages in schema order, each with name/title (when present) and top-level `elements` containing name/type/title only. Titles preserve all existing localized values; choices, descriptions, nested content and expressions are omitted. A panel is one top-level element, not an expanded list of its children. Empty surveys have an empty outline. Use `latest_revision.sequence`, or **0** when null.
+- GET `/api/external/surveys/{survey}/pages?name=feedback`: returns `{survey_id,sequence,page}` in `data`; `page` is the complete effective page, including nested elements and page conditions.
+- GET `/api/external/surveys/{survey}/questions?name=service_rating&page=feedback`: returns `{survey_id,sequence,page_name,question}` in `data`; `question` is the complete effective top-level question/element. `page` is optional for disambiguation. Nested questions are not separately addressable, matching mutation targeting; read their containing page (or panel element) instead.
+
+Page/question names are exact and case-sensitive. URL-encode **query values**, including slashes, dots and spaces; do not interpolate names as URL path segments. Required `name` and optional nonempty `page` must be strings: invalid queries return Laravel 422 `{message,errors}`. Missing targets return controller 404 `{success:false,message}`; ambiguous matches return controller 422, never an arbitrary match. Malformed page/element structure can return controller 422. Missing survey remains Laravel 404. Reads never mutate surveys or create revisions. Page/question `sequence` identifies the effective snapshot read, with **0** when no revision exists.
+
+For POST `/mutations`, send **`"include_snapshot": false`** in both dry-run and apply requests. This omits only `data.survey.snapshot`; metadata, actor, validation, diff and revision/sequence fields remain. Omitted or true preserves the legacy full response. Use JSON booleans (not the strings `"true"`/`"false"`); null is invalid. Stored revisions and validation still use the complete schema. `data.diff` is a summary of targets/changed fields, **not old/new property values**: review it alongside your request and the content you read. Use the default full dry-run response if you need to inspect the complete candidate.
+
+Recommended small-edit flow:
+1. Fetch overview to find the target, supported operations and revision sequence.
+2. Read the question and, if its context matters, its page. If the returned sequence differs from the overview or earlier reads, refetch/reconcile before composing a change; do not combine snapshots from different revisions.
+3. Send a named-target dry-run with `expected_sequence`, a short `note`, and `include_snapshot:false`; review request, diff and validation.
+4. Apply the same request/sequence with only `dry_run` changed to false.
+5. Read the affected question/page back and compare its sequence to the applied sequence. A later sequence means another edit may have intervened; reconcile before claiming your version is still current. For deletions, verify absence plus the current overview sequence.
+
+These reads are not dependency discovery. For cross-page expressions, triggers, renames, moves/deletions or broad structural edits, inspect the relevant other pages or the full agent-context before changing anything. Overview deliberately omits root settings and logic. On 409 or timeout, refetch and reconcile; do not blindly retry. Client-side filtering before model/tool output remains useful for large pages; never silently truncate the fields needed to verify an edit.
+
 ## 1. Create or resume
 
 Only create when requested. POST `/api/external/surveys` creates a draft (201), owned by the key's user. Alias is unique, alias/title <=255; language codes exactly two characters, default included in supported list. Optional JSON schema defaults to empty pages, access_type defaults public (or closed); status can only be draft. Optional page_template_package_id is a deployment-valid enabled page-package UUID, otherwise omit/null for system default. Import is not publishability validation.
@@ -33,7 +54,7 @@ A timeout is not proof of failure. Resolve the intended alias and inspect authen
 
 ## 2. Context → dry-run → review → guarded apply → readback
 
-Context gives `data.survey`, effective `snapshot`, nullable `latest_revision`, `publishability`, and operation/workflow links. Use its supported operations. If latest_revision is null (and workflow expected_sequence is null), use **0**, not an unguarded null. Otherwise use latest_revision.sequence.
+Full agent-context gives `data.survey`, effective `snapshot`, nullable `latest_revision`, `publishability`, and operation/workflow links. Compact overview substitutes `outline` for `snapshot` (see the token-efficient flow above). Use its supported operations. If latest_revision is null (and workflow expected_sequence is null), use **0**, not an unguarded null. Otherwise use latest_revision.sequence.
 
 The following three independent request examples illustrate a named page followed by two different questions. Start with a survey supporting EN/ET/RU. Fetch the current sequence before each step. Examples show a new survey's expected apply progression 0 → 1 → 2 → 3; dry-runs alone do not advance it.
 

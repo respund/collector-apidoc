@@ -87,6 +87,11 @@ paths:
                   description: 'Nullable; true previews only, default false.'
                   examples:
                     - true
+                include_snapshot:
+                  type: boolean
+                  description: 'Default true. Set false to omit data.survey.snapshot in preview and apply responses; validation, diff and sequence remain. Does not change the mutation or stored revision.'
+                  examples:
+                    - false
               type: object
               required:
                 - operation
@@ -1936,6 +1941,820 @@ paths:
                 examples:
                   -
                     message: 'Survey not found.'
+        429:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    examples:
+                      - false
+                  message:
+                    type: string
+                    examples:
+                      - 'Too Many Attempts.'
+                examples:
+                  -
+                    success: false
+                    message: 'Too Many Attempts.'
+      tags:
+        - 'External API'
+    parameters:
+      -
+        in: path
+        name: survey
+        description: 'Survey UUID.'
+        required: true
+        schema:
+          type: string
+          examples:
+            - 11111111-1111-4111-8111-111111111111
+  '/api/external/surveys/{survey}/overview':
+    get:
+      summary: 'Get compact survey editing overview'
+      operationId: getCompactSurveyEditingOverview
+      description: "Same editor/ownership rules and workflow as agent-context, but replaces snapshot with outline.\nOutline lists pages and their top-level elements in schema order: name, type and title only when present.\nTitles preserve scalar/localized values. Panels are listed as elements; nested contents are not expanded.\nThis is not a dependency analysis. Read the target page/question before editing; fetch full agent-context for cross-page logic.\nUse latest_revision.sequence (0 when null) as expected_sequence. Reads do not create revisions."
+      parameters: []
+      responses:
+        200:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    examples:
+                      - true
+                  message:
+                    type: string
+                    examples:
+                      - 'External agent survey import context retrieved successfully'
+                  data:
+                    type: object
+                    properties:
+                      survey:
+                        type: object
+                        properties:
+                          id:
+                            type: string
+                            examples:
+                              - 11111111-1111-4111-8111-111111111111
+                          alias:
+                            type: string
+                            examples:
+                              - example-feedback
+                          title:
+                            type: string
+                            examples:
+                              - 'Example feedback'
+                          default_language:
+                            type: string
+                            examples:
+                              - en
+                          supported_languages:
+                            type: array
+                            items:
+                              type: string
+                            examples:
+                              -
+                                - en
+                                - et
+                                - ru
+                      outline:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            name:
+                              type: string
+                              examples:
+                                - feedback
+                            title:
+                              type:
+                                - string
+                                - object
+                                - 'null'
+                              additionalProperties:
+                                type: string
+                            elements:
+                              type: array
+                              items:
+                                type: object
+                                properties:
+                                  name:
+                                    type: string
+                                    examples:
+                                      - service_rating
+                                  type:
+                                    type: string
+                                    examples:
+                                      - radiogroup
+                                  title:
+                                    type:
+                                      - string
+                                      - object
+                                      - 'null'
+                                    additionalProperties:
+                                      type: string
+                              examples:
+                                -
+                                  -
+                                    name: service_rating
+                                    type: radiogroup
+                                    title: Service
+                        examples:
+                          -
+                            -
+                              name: feedback
+                              title: Feedback
+                              elements:
+                                -
+                                  name: service_rating
+                                  type: radiogroup
+                                  title: Service
+                      latest_revision:
+                        type:
+                          - object
+                          - 'null'
+                        properties:
+                          revision_id:
+                            type: string
+                            examples:
+                              - 33333333-3333-4333-8333-333333333333
+                          sequence:
+                            type: integer
+                            examples:
+                              - 1
+                          source:
+                            type: string
+                            examples:
+                              - external_api
+                          created_at:
+                            type: string
+                            examples:
+                              - '2026-01-01T00:00:00.000000Z'
+                        description: 'Nullable; use expected_sequence 0 when absent.'
+                      publishability:
+                        type: object
+                        properties:
+                          can_finalize:
+                            type: boolean
+                            examples:
+                              - true
+                          errors:
+                            type: array
+                            examples:
+                              - []
+                          question_count:
+                            type: integer
+                            examples:
+                              - 1
+                          has_valid_schema:
+                            type: boolean
+                            examples:
+                              - true
+                          status:
+                            type: string
+                            examples:
+                              - ready
+                      workflow:
+                        type: object
+                        properties:
+                          mutations:
+                            type: object
+                            properties:
+                              endpoint:
+                                type: string
+                                examples:
+                                  - /api/external/surveys/11111111-1111-4111-8111-111111111111/mutations
+                              method:
+                                type: string
+                                examples:
+                                  - POST
+                              operations:
+                                type: array
+                                items:
+                                  type: string
+                                examples:
+                                  -
+                                    - create_page
+                                    - upsert_page
+                                    - move_page
+                                    - delete_page
+                                    - insert_question
+                                    - upsert_question
+                                    - update_question_props
+                                    - move_question
+                                    - delete_question
+                                    - set_survey_languages
+                                    - set_survey_settings
+                                    - set_localized_text
+                              supports_dry_run:
+                                type: boolean
+                                examples:
+                                  - true
+                              expected_sequence:
+                                type:
+                                  - integer
+                                  - 'null'
+                                examples:
+                                  - 1
+                          translation_source:
+                            type: object
+                            properties:
+                              endpoint:
+                                type: string
+                                examples:
+                                  - /api/external/surveys/11111111-1111-4111-8111-111111111111/translations/source
+                              method:
+                                type: string
+                                examples:
+                                  - GET
+                          apply_translations:
+                            type: object
+                            properties:
+                              endpoint:
+                                type: string
+                                examples:
+                                  - /api/external/surveys/11111111-1111-4111-8111-111111111111/translations
+                              method:
+                                type: string
+                                examples:
+                                  - POST
+                          finalize:
+                            type: object
+                            properties:
+                              endpoint:
+                                type: string
+                                examples:
+                                  - /api/external/surveys/11111111-1111-4111-8111-111111111111/finalize
+                              method:
+                                type: string
+                                examples:
+                                  - POST
+                      documentation:
+                        type: object
+                        properties:
+                          surveyjs_guide:
+                            type: object
+                            properties:
+                              endpoint:
+                                type: string
+                                examples:
+                                  - /api/external/surveyjs-guide
+                              method:
+                                type: string
+                                examples:
+                                  - GET
+                              question_type_parameter:
+                                type: string
+                                examples:
+                                  - question_type
+                examples:
+                  -
+                    success: true
+                    message: 'External agent survey import context retrieved successfully'
+                    data:
+                      survey:
+                        id: 11111111-1111-4111-8111-111111111111
+                        alias: example-feedback
+                        title: 'Example feedback'
+                        default_language: en
+                        supported_languages:
+                          - en
+                          - et
+                          - ru
+                      outline:
+                        -
+                          name: feedback
+                          title: Feedback
+                          elements:
+                            -
+                              name: service_rating
+                              type: radiogroup
+                              title: Service
+                      latest_revision:
+                        revision_id: 33333333-3333-4333-8333-333333333333
+                        sequence: 1
+                        source: external_api
+                        created_at: '2026-01-01T00:00:00.000000Z'
+                      publishability:
+                        can_finalize: true
+                        errors: []
+                        question_count: 1
+                        has_valid_schema: true
+                        status: ready
+                      workflow:
+                        mutations:
+                          endpoint: /api/external/surveys/11111111-1111-4111-8111-111111111111/mutations
+                          method: POST
+                          operations:
+                            - create_page
+                            - upsert_page
+                            - move_page
+                            - delete_page
+                            - insert_question
+                            - upsert_question
+                            - update_question_props
+                            - move_question
+                            - delete_question
+                            - set_survey_languages
+                            - set_survey_settings
+                            - set_localized_text
+                          supports_dry_run: true
+                          expected_sequence: 1
+                        translation_source:
+                          endpoint: /api/external/surveys/11111111-1111-4111-8111-111111111111/translations/source
+                          method: GET
+                        apply_translations:
+                          endpoint: /api/external/surveys/11111111-1111-4111-8111-111111111111/translations
+                          method: POST
+                        finalize:
+                          endpoint: /api/external/surveys/11111111-1111-4111-8111-111111111111/finalize
+                          method: POST
+                      documentation:
+                        surveyjs_guide:
+                          endpoint: /api/external/surveyjs-guide
+                          method: GET
+                          question_type_parameter: question_type
+        401:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    examples:
+                      - false
+                  message:
+                    type: string
+                    examples:
+                      - 'Invalid API key'
+                examples:
+                  -
+                    success: false
+                    message: 'Invalid API key'
+        403:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    examples:
+                      - false
+                  message:
+                    type: string
+                    examples:
+                      - Forbidden
+                examples:
+                  -
+                    success: false
+                    message: Forbidden
+        404:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    examples:
+                      - 'Survey not found.'
+                examples:
+                  -
+                    message: 'Survey not found.'
+        422:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    examples:
+                      - false
+                  message:
+                    type: string
+                    examples:
+                      - 'Survey pages or elements are malformed.'
+                examples:
+                  -
+                    success: false
+                    message: 'Survey pages or elements are malformed.'
+        429:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    examples:
+                      - false
+                  message:
+                    type: string
+                    examples:
+                      - 'Too Many Attempts.'
+                examples:
+                  -
+                    success: false
+                    message: 'Too Many Attempts.'
+      tags:
+        - 'External API'
+    parameters:
+      -
+        in: path
+        name: survey
+        description: 'Survey UUID.'
+        required: true
+        schema:
+          type: string
+          examples:
+            - 11111111-1111-4111-8111-111111111111
+  '/api/external/surveys/{survey}/pages':
+    get:
+      summary: 'Read one complete page by exact name'
+      operationId: readOneCompletePageByExactName
+      description: "Requires editor and survey ownership or an explicit appAdmin/surveyAdmin key role.\nReturns the effective page including all nested content, not the whole survey. Names are case-sensitive.\nUse query parameters (URL-encoded) so names containing slashes or dots are supported.\nsequence describes this snapshot; 0 means no revision. Missing target is 404; duplicate matches or malformed pages/elements are 422.\nMissing survey uses Laravel's {message} 404 envelope.\nRead-only: no revision, response or survey changes."
+      parameters:
+        -
+          in: query
+          name: name
+          description: 'Exact page name.'
+          required: true
+          schema:
+            type: string
+            description: 'Exact page name.'
+            examples:
+              - feedback
+      responses:
+        200:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    examples:
+                      - true
+                  message:
+                    type: string
+                    examples:
+                      - Success
+                  data:
+                    type: object
+                    properties:
+                      survey_id:
+                        type: string
+                        examples:
+                          - 11111111-1111-4111-8111-111111111111
+                      sequence:
+                        type: integer
+                        examples:
+                          - 1
+                      page:
+                        type: object
+                        additionalProperties: true
+                examples:
+                  -
+                    success: true
+                    message: Success
+                    data:
+                      survey_id: 11111111-1111-4111-8111-111111111111
+                      sequence: 1
+                      page:
+                        name: feedback
+                        elements:
+                          -
+                            type: text
+                            name: comment
+                            title: 'Your comment'
+        401:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    examples:
+                      - false
+                  message:
+                    type: string
+                    examples:
+                      - 'Invalid API key'
+                examples:
+                  -
+                    success: false
+                    message: 'Invalid API key'
+        403:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    examples:
+                      - false
+                  message:
+                    type: string
+                    examples:
+                      - Forbidden
+                examples:
+                  -
+                    success: false
+                    message: Forbidden
+        404:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    examples:
+                      - false
+                  message:
+                    type: string
+                    examples:
+                      - 'Page not found.'
+                examples:
+                  -
+                    success: false
+                    message: 'Page not found.'
+        422:
+          description: ''
+          content:
+            application/json:
+              schema:
+                anyOf:
+                  -
+                    description: 'Invalid query'
+                    type: object
+                    properties:
+                      message:
+                        type: string
+                        examples:
+                          - 'The name field is required.'
+                      errors:
+                        type: object
+                        properties:
+                          name:
+                            type: array
+                            items:
+                              type: string
+                            examples:
+                              -
+                                - 'The name field is required.'
+                    examples:
+                      -
+                        message: 'The name field is required.'
+                        errors:
+                          name:
+                            - 'The name field is required.'
+                  -
+                    description: 'Ambiguous name'
+                    type: object
+                    properties:
+                      success:
+                        type: boolean
+                        examples:
+                          - false
+                      message:
+                        type: string
+                        examples:
+                          - 'Page name is ambiguous.'
+                    examples:
+                      -
+                        success: false
+                        message: 'Page name is ambiguous.'
+        429:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    examples:
+                      - false
+                  message:
+                    type: string
+                    examples:
+                      - 'Too Many Attempts.'
+                examples:
+                  -
+                    success: false
+                    message: 'Too Many Attempts.'
+      tags:
+        - 'External API'
+    parameters:
+      -
+        in: path
+        name: survey
+        description: 'Survey UUID.'
+        required: true
+        schema:
+          type: string
+          examples:
+            - 11111111-1111-4111-8111-111111111111
+  '/api/external/surveys/{survey}/questions':
+    get:
+      summary: 'Read one complete top-level question by exact name'
+      operationId: readOneCompleteTopLevelQuestionByExactName
+      description: "Same editor/ownership rules as agent-context. Optional page scopes lookup to that exact page name.\nMatches top-level page elements, like mutations; panels return their full nested content.\nNested questions are not separately addressable: read their containing page instead.\nNames are case-sensitive; URL-encode query values. Missing target is 404; multiple matches are 422, never silently chosen.\nsequence describes the effective snapshot (0 when no revision). No writes. This does not include cross-page dependencies.\nMalformed pages/elements return controller 422; missing survey uses Laravel's {message} 404 envelope."
+      parameters:
+        -
+          in: query
+          name: name
+          description: 'Exact top-level question/element name.'
+          required: true
+          schema:
+            type: string
+            description: 'Exact top-level question/element name.'
+            examples:
+              - comment
+        -
+          in: query
+          name: page
+          description: 'Optional exact page name to disambiguate.'
+          required: false
+          schema:
+            type: string
+            description: 'Optional exact page name to disambiguate.'
+            examples:
+              - feedback
+      responses:
+        200:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    examples:
+                      - true
+                  message:
+                    type: string
+                    examples:
+                      - Success
+                  data:
+                    type: object
+                    properties:
+                      survey_id:
+                        type: string
+                        examples:
+                          - 11111111-1111-4111-8111-111111111111
+                      sequence:
+                        type: integer
+                        examples:
+                          - 1
+                      page_name:
+                        type:
+                          - string
+                          - 'null'
+                        examples:
+                          - feedback
+                      question:
+                        type: object
+                        additionalProperties: true
+                examples:
+                  -
+                    success: true
+                    message: Success
+                    data:
+                      survey_id: 11111111-1111-4111-8111-111111111111
+                      sequence: 1
+                      page_name: feedback
+                      question:
+                        type: text
+                        name: comment
+                        title: 'Your comment'
+        401:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    examples:
+                      - false
+                  message:
+                    type: string
+                    examples:
+                      - 'Invalid API key'
+                examples:
+                  -
+                    success: false
+                    message: 'Invalid API key'
+        403:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    examples:
+                      - false
+                  message:
+                    type: string
+                    examples:
+                      - Forbidden
+                examples:
+                  -
+                    success: false
+                    message: Forbidden
+        404:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    examples:
+                      - false
+                  message:
+                    type: string
+                    examples:
+                      - 'Question not found.'
+                examples:
+                  -
+                    success: false
+                    message: 'Question not found.'
+        422:
+          description: ''
+          content:
+            application/json:
+              schema:
+                anyOf:
+                  -
+                    description: 'Invalid query'
+                    type: object
+                    properties:
+                      message:
+                        type: string
+                        examples:
+                          - 'The name field is required.'
+                      errors:
+                        type: object
+                        properties:
+                          name:
+                            type: array
+                            items:
+                              type: string
+                            examples:
+                              -
+                                - 'The name field is required.'
+                    examples:
+                      -
+                        message: 'The name field is required.'
+                        errors:
+                          name:
+                            - 'The name field is required.'
+                  -
+                    description: 'Ambiguous name'
+                    type: object
+                    properties:
+                      success:
+                        type: boolean
+                        examples:
+                          - false
+                      message:
+                        type: string
+                        examples:
+                          - 'Question name is ambiguous.'
+                    examples:
+                      -
+                        success: false
+                        message: 'Question name is ambiguous.'
         429:
           description: ''
           content:
@@ -4114,4 +4933,4 @@ paths:
           type: string
           examples:
             - synthetic-participant-001
-x-source-contract-sha256: 7dfce8a2c16952c72b791b6943b66c11bc89af8702aea9881bfcb0761ddf1c10
+x-source-contract-sha256: c21f2006c3d855a625e57963c7df4a047800c100f992a176203313a7d5b72e75

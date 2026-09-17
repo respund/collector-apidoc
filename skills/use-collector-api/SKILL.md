@@ -21,10 +21,11 @@ Include a short `note` with every survey mutation. It should read like a compact
 
 ## Safe mutation flow
 
-1. Fetch authenticated agent-context and confirm scope and the current revision sequence.
-2. Submit a `dry_run` with `expected_sequence` and the short `note`.
-3. Review the diff and validation result; preserve unrelated schema content.
-4. Apply the identical guarded request with the same sequence and note.
-5. Read back agent-context and verify the requested result.
+1. Fetch authenticated `/api/external/surveys/{survey}/overview` for the compact page/question outline, scope, supported operations and revision sequence (0 when latest_revision is null). Resolve an unknown UUID through by-alias agent-context if necessary.
+2. Read only the required `/pages?name=...` or `/questions?name=...&page=...`; URL-encode exact names. These return the complete selected object and its sequence, not a full snapshot. Targeting is top-level; for nested questions read the containing page. If sequences differ between reads, refetch/reconcile. Fetch full agent-context for root settings or cross-page dependencies; the outline is not a logic/dependency map.
+3. Submit a `dry_run` with `expected_sequence`, the short `note`, and `include_snapshot:false` for a focused edit. Default/true returns the full candidate if that is needed.
+4. Review the request, diff and validation result; preserve unrelated schema content. The diff is a changed-field summary, not old/new values.
+5. Apply the identical guarded request with the same sequence and note (only change `dry_run` to false).
+6. Read back the affected question/page and verify the requested result and applied sequence; a later sequence means another writer may have intervened. For deletion verify absence plus the overview sequence. Filter large HTTP responses before exposing tool output to the model, but never truncate required context silently.
 
 On `409`, refetch and reconcile instead of overwriting. Never finalize or publish unless explicitly requested.
