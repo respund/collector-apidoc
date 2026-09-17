@@ -19,6 +19,8 @@ Every listed route requires the exact `editor` API-key role except GET `/api/ext
 
 GET `/api/external/surveyjs-guide` returns the pinned, public-safe Collector guide in the standard `{success:true,message,data}` envelope. Add `?question_type=radiogroup` to retain the version/general sections while filtering `data.question_types` to that documented type. A 422 for an undocumented type means only that no guide entry exists; it does not mean the SurveyJS type itself is unsupported. The guide covers `autoAdvanceIf`, its 300 ms/native-pointer/sole-question limits, and the `renderAs: "cards"` package prerequisite. Documentation never proves that `core/radiogroup-cards` is installed, enabled or valid on the target deployment.
 
+**Language-selection question:** discover `data.question_types.radiogroup.extensions.setsSurveyLanguage` in that guide. This is native `type: "radiogroup"` plus `setsSurveyLanguage: true`, not a theme or a separate type. Static choice values must be supported language codes. Successful forward navigation applies the answer to the survey and shell language; selection alone does not. Use `update_question_props` to enable it on an existing compatible question, and read back `/questions?name=...&page=...` to identify the configured behavior (overview omits extension properties). The guide includes a complete example and limitations.
+
 After fetching context, use the normal mutation sequence: dry-run → review `data.diff` and `data.validation` → apply the identical guarded request → read back. `update_question_props` is the supported way to add `autoAdvanceIf`; do not write survey content through SQL or application internals.
 
 ## Token-efficient reads and mutations

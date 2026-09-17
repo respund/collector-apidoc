@@ -586,7 +586,7 @@ paths:
     get:
       summary: 'Get the Collector SurveyJS extension guide'
       operationId: getTheCollectorSurveyJSExtensionGuide
-      description: "This read-only guide is not tied to a survey. It describes the pinned SurveyJS runtime, the Collector-only\nautoAdvanceIf extension, and renderer/package caveats. Use the optional question_type filter to return one entry."
+      description: "This read-only guide is not tied to a survey. It describes the pinned SurveyJS runtime, the Collector-only\nautoAdvanceIf and setsSurveyLanguage extensions, and renderer/package caveats. Use the optional question_type filter to return one entry."
       parameters:
         -
           in: query
@@ -655,6 +655,17 @@ paths:
                               extensions:
                                 type: object
                                 properties:
+                                  setsSurveyLanguage:
+                                    type: object
+                                    properties:
+                                      type: { type: string }
+                                      default: { type: boolean }
+                                      label: { type: object, properties: { en: { type: string }, et: { type: string }, ru: { type: string } } }
+                                      identify_by: { type: object, properties: { type: { type: string }, setsSurveyLanguage: { type: boolean } } }
+                                      rules: { type: array, items: { type: string } }
+                                      examples: { type: array, items: { type: object, properties: { label: { type: string }, question: { type: object, properties: { type: { type: string }, name: { type: string }, title: { type: object, properties: { en: { type: string }, et: { type: string }, ru: { type: string } } }, isRequired: { type: boolean }, setsSurveyLanguage: { type: boolean }, choices: { type: array, items: { type: object, properties: { value: { type: string }, text: { type: string } } } } } }, prerequisite: { type: string } } } }
+                                      discovery: { type: string }
+                                      mutation: { type: object, properties: { operation: { type: string }, target: { type: object, properties: { page: { type: string }, question: { type: string } } }, payload: { type: object, properties: { props: { type: object, properties: { setsSurveyLanguage: { type: boolean } } } } }, dry_run: { type: boolean }, expected_sequence: { type: integer }, include_snapshot: { type: boolean }, note: { type: string } } }
                                   autoAdvanceIf:
                                     type: object
                                     properties:
@@ -735,7 +746,7 @@ paths:
                       scope: 'Collector-specific SurveyJS behavior; not a full upstream API reference'
                       general:
                         schema_format: 'SurveyJS JSON'
-                        native_vs_extension: 'SurveyJS owns the standard schema and rendering model. autoAdvanceIf is a Collector extension and is not an upstream SurveyJS property.'
+                        native_vs_extension: 'SurveyJS owns the standard schema and rendering model. autoAdvanceIf and setsSurveyLanguage are Collector extensions, not upstream SurveyJS properties.'
                         extensions_are_not_upstream_properties: true
                         renderAs: 'renderAs selects a renderer for the same native question type; a non-native value requires the matching question package.'
                         package_availability: 'Documentation is not deployment availability discovery. Confirm that a required package is installed, enabled and valid before applying a renderAs value.'
@@ -750,6 +761,54 @@ paths:
                             - native
                             - cards
                           extensions:
+                            setsSurveyLanguage:
+                              type: boolean
+                              default: false
+                              label:
+                                en: 'Language selection'
+                                et: Keelevalik
+                                ru: 'Выбор языка'
+                              identify_by:
+                                type: radiogroup
+                                setsSurveyLanguage: true
+                              rules:
+                                - 'This is a reusable behavior of the native radiogroup, not a new SurveyJS type or a visual theme. No additional package is required for the native renderer.'
+                                - 'Set setsSurveyLanguage to the JSON boolean true on a top-level radiogroup. Omitted or false leaves ordinary question behavior unchanged. Only one enabled language-selection question is allowed per page; nested panels and dynamic-panel templates are not supported.'
+                                - 'Use unique static choice values that are lowercase two-letter codes from the survey supported_languages, with native-language labels. Other, None and remote/copied choices are not supported. Make the question required by default.'
+                                - 'On successful forward page navigation, the answered visible editable language question on the previous page sets the SurveyJS locale, shared page-shell locale, URL lang and subsequent saved response language. Answer selection alone does not change the current page language.'
+                                - 'Failed or cancelled navigation does not apply the language. Going Back preserves the current language; changing the answer and going forward applies the new selection. Unsupported or empty answers never switch language.'
+                                - 'Works with manual Next and successful autoAdvanceIf navigation. setsSurveyLanguage does not itself enable automatic navigation. It does not switch language on final-page completion, readonly rendering or initial data restoration. Keep the selector before another page and use normal page navigation.'
+                                - 'The same behavior runs in live and preview modes. Preview never saves responses. Existing translations are selected, not generated; provide the target-language survey texts.'
+                                - 'It can be combined with renderAs cards when core/radiogroup-cards is installed, enabled and valid. The behavior does not depend on that visual renderer.'
+                              examples:
+                                -
+                                  label: 'Required language selection'
+                                  question:
+                                    type: radiogroup
+                                    name: survey_language
+                                    title:
+                                      en: 'Choose a language'
+                                      et: 'Valige keel'
+                                      ru: 'Выберите язык'
+                                    isRequired: true
+                                    setsSurveyLanguage: true
+                                    choices:
+                                      - { value: et, text: Eesti }
+                                      - { value: ru, text: Русский }
+                                  prerequisite: 'The survey supported_languages must include et and ru. Add a following page.'
+                              discovery: 'GET /api/external/surveyjs-guide?question_type=radiogroup; inspect data.question_types.radiogroup.extensions.setsSurveyLanguage. To identify a configured question, GET its /questions?name=...&page=... and inspect question.type plus question.setsSurveyLanguage; overview omits extension properties.'
+                              mutation:
+                                operation: update_question_props
+                                target:
+                                  page: language
+                                  question: survey_language
+                                payload:
+                                  props:
+                                    setsSurveyLanguage: true
+                                dry_run: true
+                                expected_sequence: 3
+                                include_snapshot: false
+                                note: 'Enable language selection'
                             autoAdvanceIf:
                               type: string
                               default: ''
@@ -4933,4 +4992,4 @@ paths:
           type: string
           examples:
             - synthetic-participant-001
-x-source-contract-sha256: c21f2006c3d855a625e57963c7df4a047800c100f992a176203313a7d5b72e75
+x-source-contract-sha256: c39a94514185c33a863053c128cbd5edeef79cebb2e14608925fe3b53229f2ea

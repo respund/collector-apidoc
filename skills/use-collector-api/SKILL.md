@@ -15,6 +15,10 @@ Read `AGENTS.md`, `workflow.md`, `operations.md`, and `surveyjs-guide.json` befo
 - For other matrix variants, use their row/cell-required settings and verify every visible row is validated.
 - When uploading a new survey, put one question on each page by default. Keep clearly related questions together only when both content and technical/user-flow reasons make the shared page better.
 
+## Language-selection question
+
+Discover `question_types.radiogroup.extensions.setsSurveyLanguage` via the SurveyJS guide endpoint. Use native `type: "radiogroup"` with `setsSurveyLanguage: true`, required by default, on a page before the remaining survey. Choice values must be supported language codes (for example `et` and `ru`), not translated labels or numeric IDs. The selected language applies on successful forward navigation, including automatic navigation when separately enabled. This is behavior, independent of theme/cards. Follow the guide's placement and static-choice limits. Named question reads expose the property; overview does not.
+
 ## Revision history
 
 Include a short `note` with every survey mutation. It should read like a compact git log entry: a few words describing what changed, not a narrative. Examples: `Lisa kriisikaardid`, `Matrix read kohustuslikuks`, `Luba automaatne edasi`.
