@@ -9,7 +9,7 @@
     "renderAs": "renderAs selects a renderer for the same native question type; a non-native value requires the matching question package.",
     "package_availability": "Documentation is not deployment availability discovery. Confirm that a required package is installed, enabled and valid before applying a renderAs value.",
     "auto_advance_priority": "If any question has a non-empty autoAdvanceIf, Collector disables SurveyJS survey-level autoAdvanceEnabled (including its goNextPageAutomatic alias) for that model. If none do, the schema's survey-level setting is unchanged.",
-    "runtime": "Live surveys, public and admin previews, and unsaved schema previews use the shared Collector SurveyJS runtime. Live answer persistence remains separate from preview rendering.",
+    "runtime": "Live surveys, public and admin previews, and unsaved schema previews use the shared Collector SurveyJS runtime. Preview answers, current page and language survive reload in tab-local browser storage; a new navigation/tab starts fresh, including copied opener storage. Preview never reads or writes respondent responses. Live respondent-code continuation uses the authenticated public-survey database draft; anonymous live draft identifiers are tab-local. There is no newtest parameter.",
     "html_safety": "The shared runtime sanitizes final SurveyJS HTML and Markdown output with its configured DOMPurify protection. Schema HTML is not an execution API.",
     "coverage": "This is the first detailed Collector extension guide for radiogroup questions, not an encyclopedia of every SurveyJS property or question type."
   },
