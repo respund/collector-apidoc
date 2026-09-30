@@ -4992,4 +4992,4 @@ paths:
           type: string
           examples:
             - synthetic-participant-001
-x-source-contract-sha256: a5e611cf3c6154b42aba08ceaea7e888059e0ba0c48de488daca145b04bcb1fd
+x-source-contract-sha256: fd87a63995db36ac485cfbaf257e8f70d17ce488e8ad637a67badaaeda32e66b
