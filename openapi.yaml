@@ -10,12 +10,15 @@ tags:
   -
     name: 'External API'
     description: ''
+  -
+    name: 'Headless interviews'
+    description: "\nInterviewer key required, plus survey ownership/explicit manager-key access. Sessions are bound to the creating key.\nStored schema/languages are pinned at start. Only successful requests are remembered for idempotency."
 components:
   securitySchemes:
     default:
       type: http
       scheme: bearer
-      description: 'Operator-issued bearer key. Editor is required except for latest revision; survey ownership or explicit appAdmin/surveyAdmin key access is still required.'
+      description: 'Operator-issued bearer key. Interview routes require interviewer; authoring routes require editor except latest revision. Survey ownership or explicit appAdmin/surveyAdmin key access is still required. Interviews are bound to the creating key; roles do not imply each other.'
 security:
   -
     default: []
@@ -4992,4 +4995,1307 @@ paths:
           type: string
           examples:
             - synthetic-participant-001
-x-source-contract-sha256: 593c26cf370ffc784363efe6b7f31cad3d0f1c1c4759b4a93781839fda799e89
+  '/api/external/surveys/{survey}/interviews':
+    post:
+      summary: 'Start an interview'
+      operationId: startAnInterview
+      description: "Explicit test/live mode; test mode never creates a Response or consumes an invitation. Live requires active survey;\nclosed live surveys also require a valid respondent_token. Repeating the same request_id/payload returns the original start result.\nUnsupported schemas/translations fail closed. See workflow.md for the bounded SurveyJS subset."
+      parameters: []
+      responses:
+        201:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    examples:
+                      - true
+                  message:
+                    type: string
+                    examples:
+                      - Success
+                  data:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        examples:
+                          - 33333333-3333-4333-8333-333333333333
+                      survey_id:
+                        type: string
+                        examples:
+                          - 11111111-1111-4111-8111-111111111111
+                      mode:
+                        type: string
+                        examples:
+                          - test
+                      version:
+                        type: integer
+                        examples:
+                          - 1
+                      schema_sequence:
+                        type: integer
+                        examples:
+                          - 0
+                      available_languages:
+                        type: array
+                        items:
+                          type: string
+                        examples:
+                          -
+                            - et
+                            - ru
+                      response_id:
+                        type:
+                          - string
+                          - 'null'
+                      status:
+                        type: string
+                        examples:
+                          - awaiting_answer
+                      language:
+                        type: string
+                        examples:
+                          - et
+                      can_go_back:
+                        type: boolean
+                        examples:
+                          - false
+                      question:
+                        type:
+                          - object
+                          - 'null'
+                        properties:
+                          name:
+                            type: string
+                          type:
+                            type: string
+                            enum:
+                              - radiogroup
+                              - checkbox
+                              - rating
+                              - text
+                              - comment
+                          read_aloud:
+                            type: string
+                          description:
+                            type: string
+                          required:
+                            type: boolean
+                          value:
+                            type:
+                              - string
+                              - number
+                              - array
+                              - 'null'
+                            items:
+                              type:
+                                - string
+                                - number
+                          choices:
+                            type: array
+                            items:
+                              type: object
+                              properties:
+                                value:
+                                  type:
+                                    - string
+                                    - number
+                                text:
+                                  type: string
+                      previous_question:
+                        type:
+                          - object
+                          - 'null'
+                        properties:
+                          name:
+                            type: string
+                          type:
+                            type: string
+                            enum:
+                              - radiogroup
+                              - checkbox
+                              - rating
+                              - text
+                              - comment
+                          read_aloud:
+                            type: string
+                          description:
+                            type: string
+                          required:
+                            type: boolean
+                          value:
+                            type:
+                              - string
+                              - number
+                              - array
+                              - 'null'
+                            items:
+                              type:
+                                - string
+                                - number
+                          choices:
+                            type: array
+                            items:
+                              type: object
+                              properties:
+                                value:
+                                  type:
+                                    - string
+                                    - number
+                                text:
+                                  type: string
+                examples:
+                  -
+                    success: true
+                    message: Success
+                    data:
+                      id: 33333333-3333-4333-8333-333333333333
+                      survey_id: 11111111-1111-4111-8111-111111111111
+                      mode: test
+                      version: 1
+                      schema_sequence: 0
+                      available_languages:
+                        - et
+                        - ru
+                      response_id: null
+                      status: awaiting_answer
+                      language: et
+                      can_go_back: false
+                      question:
+                        name: travel
+                        type: radiogroup
+                        read_aloud: 'Kas te reisite?'
+                        description: ''
+                        required: true
+                        value: null
+                        choices:
+                          -
+                            value: 'yes'
+                            text: Jah
+                          -
+                            value: 'no'
+                            text: Ei
+                      previous_question: null
+        401:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    examples:
+                      - false
+                  message:
+                    type: string
+                    examples:
+                      - 'Missing API key token'
+                examples:
+                  -
+                    success: false
+                    message: 'Missing API key token'
+        403:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    examples:
+                      - false
+                  message:
+                    type: string
+                    examples:
+                      - interview_access_denied
+                  errors:
+                    type: object
+                    properties:
+                      code:
+                        type: string
+                        examples:
+                          - interview_access_denied
+                examples:
+                  -
+                    success: false
+                    message: interview_access_denied
+                    errors:
+                      code: interview_access_denied
+        404:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    examples:
+                      - 'No query results for model [App\Models\Survey].'
+                examples:
+                  -
+                    message: 'No query results for model [App\Models\Survey].'
+        409:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    examples:
+                      - false
+                  message:
+                    type: string
+                    examples:
+                      - request_id_conflict
+                  errors:
+                    type: object
+                    properties:
+                      code:
+                        type: string
+                        examples:
+                          - request_id_conflict
+                examples:
+                  -
+                    success: false
+                    message: request_id_conflict
+                    errors:
+                      code: request_id_conflict
+        422:
+          description: ''
+          content:
+            application/json:
+              schema:
+                anyOf:
+                  -
+                    description: ''
+                    type: object
+                    properties:
+                      message:
+                        type: string
+                        examples:
+                          - 'The language field is required.'
+                      errors:
+                        type: object
+                        properties:
+                          language:
+                            type: array
+                            items:
+                              type: string
+                            examples:
+                              -
+                                - 'The language field is required.'
+                    examples:
+                      -
+                        message: 'The language field is required.'
+                        errors:
+                          language:
+                            - 'The language field is required.'
+                  -
+                    description: ''
+                    type: object
+                    properties:
+                      success:
+                        type: boolean
+                        examples:
+                          - false
+                      message:
+                        type: string
+                        examples:
+                          - unsupported_schema
+                      errors:
+                        type: object
+                        properties:
+                          code:
+                            type: string
+                            examples:
+                              - unsupported_schema
+                          validation:
+                            type: array
+                            items:
+                              type: string
+                            examples:
+                              -
+                                - question.type
+                    examples:
+                      -
+                        success: false
+                        message: unsupported_schema
+                        errors:
+                          code: unsupported_schema
+                          validation:
+                            - question.type
+        503:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    examples:
+                      - false
+                  message:
+                    type: string
+                    examples:
+                      - runtime_unavailable
+                  errors:
+                    type: object
+                    properties:
+                      code:
+                        type: string
+                        examples:
+                          - runtime_unavailable
+                examples:
+                  -
+                    success: false
+                    message: runtime_unavailable
+                    errors:
+                      code: runtime_unavailable
+      tags:
+        - 'Headless interviews'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                request_id:
+                  type: string
+                  description: 'Client-generated UUID, unique per key/survey start.'
+                  examples:
+                    - 22222222-2222-4222-8222-222222222222
+                  format: uuid
+                language:
+                  type: string
+                  description: 'Initial language.'
+                  examples:
+                    - et
+                  enum:
+                    - en
+                    - et
+                    - ru
+                mode:
+                  type: string
+                  description: 'test or live.'
+                  examples:
+                    - test
+                  enum:
+                    - test
+                    - live
+                respondent_token:
+                  type:
+                    - string
+                    - 'null'
+                  description: 'Closed-live invitation token; omit for test/public.'
+                  examples:
+                    - null
+                  maxLength: 255
+              required:
+                - request_id
+                - language
+                - mode
+    parameters:
+      -
+        in: path
+        name: survey
+        description: 'Survey UUID.'
+        required: true
+        schema:
+          type: string
+          examples:
+            - 11111111-1111-4111-8111-111111111111
+  '/api/external/interviews/{interview}':
+    get:
+      summary: 'Read or resume an interview'
+      operationId: readOrResumeAnInterview
+      description: "Read-only persisted projection. previous_question repeats the previous applicable prompt and saved value without moving.\nCompleted sessions remain readable. No full schema or full answer dataset is returned. Same creating key and current survey access required."
+      parameters: []
+      responses:
+        200:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    examples:
+                      - true
+                  message:
+                    type: string
+                    examples:
+                      - Success
+                  data:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        examples:
+                          - 33333333-3333-4333-8333-333333333333
+                      survey_id:
+                        type: string
+                        examples:
+                          - 11111111-1111-4111-8111-111111111111
+                      mode:
+                        type: string
+                        examples:
+                          - test
+                      version:
+                        type: integer
+                        examples:
+                          - 2
+                      schema_sequence:
+                        type: integer
+                        examples:
+                          - 0
+                      available_languages:
+                        type: array
+                        items:
+                          type: string
+                        examples:
+                          -
+                            - et
+                            - ru
+                      response_id:
+                        type:
+                          - string
+                          - 'null'
+                      status:
+                        type: string
+                        examples:
+                          - awaiting_answer
+                      language:
+                        type: string
+                        examples:
+                          - ru
+                      can_go_back:
+                        type: boolean
+                        examples:
+                          - false
+                      question:
+                        type:
+                          - object
+                          - 'null'
+                        properties:
+                          name:
+                            type: string
+                          type:
+                            type: string
+                            enum:
+                              - radiogroup
+                              - checkbox
+                              - rating
+                              - text
+                              - comment
+                          read_aloud:
+                            type: string
+                          description:
+                            type: string
+                          required:
+                            type: boolean
+                          value:
+                            type:
+                              - string
+                              - number
+                              - array
+                              - 'null'
+                            items:
+                              type:
+                                - string
+                                - number
+                          choices:
+                            type: array
+                            items:
+                              type: object
+                              properties:
+                                value:
+                                  type:
+                                    - string
+                                    - number
+                                text:
+                                  type: string
+                      previous_question:
+                        type:
+                          - object
+                          - 'null'
+                        properties:
+                          name:
+                            type: string
+                          type:
+                            type: string
+                            enum:
+                              - radiogroup
+                              - checkbox
+                              - rating
+                              - text
+                              - comment
+                          read_aloud:
+                            type: string
+                          description:
+                            type: string
+                          required:
+                            type: boolean
+                          value:
+                            type:
+                              - string
+                              - number
+                              - array
+                              - 'null'
+                            items:
+                              type:
+                                - string
+                                - number
+                          choices:
+                            type: array
+                            items:
+                              type: object
+                              properties:
+                                value:
+                                  type:
+                                    - string
+                                    - number
+                                text:
+                                  type: string
+                examples:
+                  -
+                    success: true
+                    message: Success
+                    data:
+                      id: 33333333-3333-4333-8333-333333333333
+                      survey_id: 11111111-1111-4111-8111-111111111111
+                      mode: test
+                      version: 2
+                      schema_sequence: 0
+                      available_languages:
+                        - et
+                        - ru
+                      response_id: null
+                      status: awaiting_answer
+                      language: ru
+                      can_go_back: false
+                      question:
+                        name: travel
+                        type: radiogroup
+                        read_aloud: 'Вы путешествуете?'
+                        description: ''
+                        required: true
+                        value: null
+                        choices:
+                          -
+                            value: 'yes'
+                            text: Да
+                          -
+                            value: 'no'
+                            text: Нет
+                      previous_question: null
+        401:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    examples:
+                      - false
+                  message:
+                    type: string
+                    examples:
+                      - 'Missing API key token'
+                examples:
+                  -
+                    success: false
+                    message: 'Missing API key token'
+        403:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    examples:
+                      - false
+                  message:
+                    type: string
+                    examples:
+                      - interview_access_denied
+                  errors:
+                    type: object
+                    properties:
+                      code:
+                        type: string
+                        examples:
+                          - interview_access_denied
+                examples:
+                  -
+                    success: false
+                    message: interview_access_denied
+                    errors:
+                      code: interview_access_denied
+        404:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    examples:
+                      - 'No query results for model [App\Models\SurveyInterview].'
+                examples:
+                  -
+                    message: 'No query results for model [App\Models\SurveyInterview].'
+      tags:
+        - 'Headless interviews'
+    parameters:
+      -
+        in: path
+        name: interview
+        description: 'Interview UUID.'
+        required: true
+        schema:
+          type: string
+          examples:
+            - 33333333-3333-4333-8333-333333333333
+  '/api/external/interviews/{interview}/actions':
+    post:
+      summary: 'Answer, change language, go back or continue with the saved answer'
+      operationId: answerChangeLanguageGoBackOrContinueWithTheSavedAnswer
+      description: "Every action requires expected_version and request_id. Successful actions increment version, including locale-only changes.\nSame ID/payload replays its original result even after later actions; changed payload is 409. GET for the latest version.\nOptional language on answer is atomic with validation: failed answers never persist a locale change.\nLive completion creates one normal Response and consumes one valid closed invitation use in the same transaction."
+      parameters: []
+      responses:
+        200:
+          description: ''
+          content:
+            application/json:
+              schema:
+                anyOf:
+                  -
+                    description: ''
+                    type: object
+                    properties:
+                      success:
+                        type: boolean
+                        examples:
+                          - true
+                      message:
+                        type: string
+                        examples:
+                          - Success
+                      data:
+                        type: object
+                        properties:
+                          id:
+                            type: string
+                            examples:
+                              - 33333333-3333-4333-8333-333333333333
+                          survey_id:
+                            type: string
+                            examples:
+                              - 11111111-1111-4111-8111-111111111111
+                          mode:
+                            type: string
+                            examples:
+                              - test
+                          version:
+                            type: integer
+                            examples:
+                              - 3
+                          schema_sequence:
+                            type: integer
+                            examples:
+                              - 0
+                          available_languages:
+                            type: array
+                            items:
+                              type: string
+                            examples:
+                              -
+                                - et
+                                - ru
+                          response_id:
+                            type:
+                              - string
+                              - 'null'
+                          status:
+                            type: string
+                            examples:
+                              - awaiting_answer
+                          language:
+                            type: string
+                            examples:
+                              - ru
+                          can_go_back:
+                            type: boolean
+                            examples:
+                              - true
+                          question:
+                            type:
+                              - object
+                              - 'null'
+                            properties:
+                              name:
+                                type: string
+                              type:
+                                type: string
+                                enum:
+                                  - radiogroup
+                                  - checkbox
+                                  - rating
+                                  - text
+                                  - comment
+                              read_aloud:
+                                type: string
+                              description:
+                                type: string
+                              required:
+                                type: boolean
+                              value:
+                                type:
+                                  - string
+                                  - number
+                                  - array
+                                  - 'null'
+                                items:
+                                  type:
+                                    - string
+                                    - number
+                              choices:
+                                type: array
+                                items:
+                                  type: object
+                                  properties:
+                                    value:
+                                      type: [string, number]
+                                    text:
+                                      type: string
+                          previous_question:
+                            type:
+                              - object
+                              - 'null'
+                            properties:
+                              name:
+                                type: string
+                              type:
+                                type: string
+                                enum:
+                                  - radiogroup
+                                  - checkbox
+                                  - rating
+                                  - text
+                                  - comment
+                              read_aloud:
+                                type: string
+                              description:
+                                type: string
+                              required:
+                                type: boolean
+                              value:
+                                type:
+                                  - string
+                                  - number
+                                  - array
+                                  - 'null'
+                                items:
+                                  type:
+                                    - string
+                                    - number
+                              choices:
+                                type: array
+                                items:
+                                  type: object
+                                  properties:
+                                    value:
+                                      type: [string, number]
+                                    text:
+                                      type: string
+                    examples:
+                      -
+                        success: true
+                        message: Success
+                        data:
+                          id: 33333333-3333-4333-8333-333333333333
+                          survey_id: 11111111-1111-4111-8111-111111111111
+                          mode: test
+                          version: 3
+                          schema_sequence: 0
+                          available_languages:
+                            - et
+                            - ru
+                          response_id: null
+                          status: awaiting_answer
+                          language: ru
+                          can_go_back: true
+                          question:
+                            name: comment
+                            type: comment
+                            read_aloud: 'Ваш комментарий?'
+                            description: ''
+                            required: true
+                            value: null
+                            choices: []
+                          previous_question:
+                            name: travel
+                            type: radiogroup
+                            read_aloud: 'Вы путешествуете?'
+                            description: ''
+                            required: true
+                            value: 'yes'
+                            choices:
+                              -
+                                value: 'yes'
+                                text: Да
+                              -
+                                value: 'no'
+                                text: Нет
+                  -
+                    description: ''
+                    type: object
+                    properties:
+                      success:
+                        type: boolean
+                        examples:
+                          - true
+                      message:
+                        type: string
+                        examples:
+                          - Success
+                      data:
+                        type: object
+                        properties:
+                          id:
+                            type: string
+                            examples:
+                              - 33333333-3333-4333-8333-333333333333
+                          survey_id:
+                            type: string
+                            examples:
+                              - 11111111-1111-4111-8111-111111111111
+                          mode:
+                            type: string
+                            examples:
+                              - live
+                          version:
+                            type: integer
+                            examples:
+                              - 4
+                          schema_sequence:
+                            type: integer
+                            examples:
+                              - 0
+                          available_languages:
+                            type: array
+                            items:
+                              type: string
+                            examples:
+                              -
+                                - et
+                                - ru
+                          response_id:
+                            type:
+                              - string
+                              - 'null'
+                          status:
+                            type: string
+                            examples:
+                              - completed
+                          language:
+                            type: string
+                            examples:
+                              - ru
+                          can_go_back:
+                            type: boolean
+                            examples:
+                              - false
+                          question:
+                            type:
+                              - object
+                              - 'null'
+                            properties:
+                              name:
+                                type: string
+                              type:
+                                type: string
+                                enum:
+                                  - radiogroup
+                                  - checkbox
+                                  - rating
+                                  - text
+                                  - comment
+                              read_aloud:
+                                type: string
+                              description:
+                                type: string
+                              required:
+                                type: boolean
+                              value:
+                                type:
+                                  - string
+                                  - number
+                                  - array
+                                  - 'null'
+                                items:
+                                  type:
+                                    - string
+                                    - number
+                              choices:
+                                type: array
+                                items:
+                                  type: object
+                                  properties:
+                                    value:
+                                      type: [string, number]
+                                    text:
+                                      type: string
+                          previous_question:
+                            type:
+                              - object
+                              - 'null'
+                            properties:
+                              name:
+                                type: string
+                              type:
+                                type: string
+                                enum:
+                                  - radiogroup
+                                  - checkbox
+                                  - rating
+                                  - text
+                                  - comment
+                              read_aloud:
+                                type: string
+                              description:
+                                type: string
+                              required:
+                                type: boolean
+                              value:
+                                type:
+                                  - string
+                                  - number
+                                  - array
+                                  - 'null'
+                                items:
+                                  type:
+                                    - string
+                                    - number
+                              choices:
+                                type: array
+                                items:
+                                  type: object
+                                  properties:
+                                    value:
+                                      type: [string, number]
+                                    text:
+                                      type: string
+                    examples:
+                      -
+                        success: true
+                        message: Success
+                        data:
+                          id: 33333333-3333-4333-8333-333333333333
+                          survey_id: 11111111-1111-4111-8111-111111111111
+                          mode: live
+                          version: 4
+                          schema_sequence: 0
+                          available_languages:
+                            - et
+                            - ru
+                          response_id: 55555555-5555-4555-8555-555555555555
+                          status: completed
+                          language: ru
+                          can_go_back: false
+                          question: null
+                          previous_question: null
+        401:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    examples:
+                      - false
+                  message:
+                    type: string
+                    examples:
+                      - 'Missing API key token'
+                examples:
+                  -
+                    success: false
+                    message: 'Missing API key token'
+        403:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    examples:
+                      - false
+                  message:
+                    type: string
+                    examples:
+                      - invalid_respondent
+                  errors:
+                    type: object
+                    properties:
+                      code:
+                        type: string
+                        examples:
+                          - invalid_respondent
+                examples:
+                  -
+                    success: false
+                    message: invalid_respondent
+                    errors:
+                      code: invalid_respondent
+        404:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    examples:
+                      - 'No query results for model [App\Models\SurveyInterview].'
+                examples:
+                  -
+                    message: 'No query results for model [App\Models\SurveyInterview].'
+        409:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    examples:
+                      - false
+                  message:
+                    type: string
+                    examples:
+                      - version_conflict
+                  errors:
+                    type: object
+                    properties:
+                      code:
+                        type: string
+                        examples:
+                          - version_conflict
+                      latest_version:
+                        type: integer
+                        examples:
+                          - 3
+                examples:
+                  -
+                    success: false
+                    message: version_conflict
+                    errors:
+                      code: version_conflict
+                      latest_version: 3
+        422:
+          description: ''
+          content:
+            application/json:
+              schema:
+                anyOf:
+                  -
+                    description: ''
+                    type: object
+                    properties:
+                      message:
+                        type: string
+                        examples:
+                          - 'The expected version field is required.'
+                      errors:
+                        type: object
+                        properties:
+                          expected_version:
+                            type: array
+                            items:
+                              type: string
+                            examples:
+                              -
+                                - 'The expected version field is required.'
+                    examples:
+                      -
+                        message: 'The expected version field is required.'
+                        errors:
+                          expected_version:
+                            - 'The expected version field is required.'
+                  -
+                    description: ''
+                    type: object
+                    properties:
+                      success:
+                        type: boolean
+                        examples:
+                          - false
+                      message:
+                        type: string
+                        examples:
+                          - invalid_answer
+                      errors:
+                        type: object
+                        properties:
+                          code:
+                            type: string
+                            examples:
+                              - invalid_answer
+                          validation:
+                            type: array
+                            items:
+                              type: string
+                            examples:
+                              -
+                                - 'Пожалуйста, ответьте на вопрос.'
+                    examples:
+                      -
+                        success: false
+                        message: invalid_answer
+                        errors:
+                          code: invalid_answer
+                          validation:
+                            - 'Пожалуйста, ответьте на вопрос.'
+        503:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    examples:
+                      - false
+                  message:
+                    type: string
+                    examples:
+                      - runtime_unavailable
+                  errors:
+                    type: object
+                    properties:
+                      code:
+                        type: string
+                        examples:
+                          - runtime_unavailable
+                examples:
+                  -
+                    success: false
+                    message: runtime_unavailable
+                    errors:
+                      code: runtime_unavailable
+      tags:
+        - 'Headless interviews'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                request_id:
+                  type: string
+                  description: 'Client-generated UUID for this action.'
+                  examples:
+                    - 44444444-4444-4444-8444-444444444444
+                  format: uuid
+                expected_version:
+                  type: integer
+                  description: 'Version last read, at least 1.'
+                  examples:
+                    - 2
+                  minimum: 1
+                  maximum: 2147483646
+                action:
+                  type: string
+                  description: 'answer, language, back or next.'
+                  examples:
+                    - answer
+                  enum:
+                    - answer
+                    - language
+                    - back
+                    - next
+                question:
+                  type: string
+                  description: 'Exact current question name; required for answer only.'
+                  examples:
+                    - travel
+                  maxLength: 255
+                value:
+                  type:
+                    - string
+                    - number
+                    - array
+                    - 'null'
+                  items:
+                    type:
+                      - string
+                      - number
+                  description: 'Required for answer; null skips an optional question. Scalars/arrays use stable choice codes, not translated labels.'
+                language:
+                  type: string
+                  description: 'Required for language; optional with answer.'
+                  examples:
+                    - ru
+                  enum:
+                    - en
+                    - et
+                    - ru
+              required:
+                - request_id
+                - expected_version
+                - action
+              allOf:
+                -
+                  if:
+                    properties:
+                      action:
+                        const: answer
+                  then:
+                    required:
+                      - question
+                      - value
+                -
+                  if:
+                    properties:
+                      action:
+                        const: language
+                  then:
+                    required:
+                      - language
+    parameters:
+      -
+        in: path
+        name: interview
+        description: 'Interview UUID.'
+        required: true
+        schema:
+          type: string
+          examples:
+            - 33333333-3333-4333-8333-333333333333
+x-source-contract-sha256: dd3a05a02629fda2ac7900737275f4005369aad2276d556c7c25b2c951d127fc
