@@ -641,6 +641,53 @@ paths:
                             type: string
                           html_safety:
                             type: string
+                          voice:
+                            type: object
+                            properties:
+                              applies_to:
+                                type: string
+                              survey:
+                                type: object
+                                properties:
+                                  intro:
+                                    type: string
+                                  outro:
+                                    type: string
+                                  estimated_minutes:
+                                    type: string
+                              question:
+                                type: object
+                                properties:
+                                  instructions:
+                                    type: string
+                                  read_choices:
+                                    type: string
+                                  hidden_choices:
+                                    type: string
+                                  rephrase:
+                                    type: string
+                                  context:
+                                    type: string
+                              rules:
+                                type: array
+                                items:
+                                  type: string
+                              example:
+                                type: object
+                                properties:
+                                  survey:
+                                    type: object
+                                    properties:
+                                      voice: { type: object, properties: { intro: { type: object, properties: { en: { type: string }, et: { type: string }, ru: { type: string } } }, estimated_minutes: { type: integer } } }
+                                  question:
+                                    type: object
+                                    properties:
+                                      type: { type: string }
+                                      name: { type: string }
+                                      isRequired: { type: boolean }
+                                      title: { type: object, properties: { en: { type: string }, et: { type: string }, ru: { type: string } } }
+                                      choices: { type: array, items: { type: object, properties: { value: { type: string }, text: { type: object, properties: { en: { type: string }, et: { type: string }, ru: { type: string } } } } } }
+                                      voice: { type: object, properties: { read_choices: { type: string }, hidden_choices: { type: array, items: { type: string } }, instructions: { type: object, properties: { en: { type: string }, et: { type: string }, ru: { type: string } } } } }
                           coverage:
                             type: string
                       question_types:
@@ -756,6 +803,64 @@ paths:
                         auto_advance_priority: "If any question has a non-empty autoAdvanceIf, Collector disables SurveyJS survey-level autoAdvanceEnabled (including its goNextPageAutomatic alias) for that model. If none do, the schema's survey-level setting is unchanged."
                         runtime: 'Live surveys, public and admin previews, and unsaved schema previews use the shared Collector SurveyJS runtime. Preview answers, current page and language survive reload in tab-local browser storage; a new navigation/tab starts fresh, including copied opener storage. Preview never reads or writes respondent responses. Live respondent-code continuation uses the authenticated public-survey database draft; anonymous live draft identifiers are tab-local. There is no newtest parameter.'
                         html_safety: 'The shared runtime sanitizes final SurveyJS HTML and Markdown output with its configured DOMPurify protection. Schema HTML is not an execution API.'
+                        voice:
+                          applies_to: 'Headless interviews only (interviewer API). voice is a Collector extension, not an upstream SurveyJS property; SurveyJS rendering ignores it. Absent voice keeps current behavior.'
+                          survey:
+                            intro: 'Translated text spoken once after the greeting, before the first question.'
+                            outro: 'Translated text spoken on completion.'
+                            estimated_minutes: 'Positive integer; interview responses also compute progress.'
+                          question:
+                            instructions: 'Translated interviewer-only guidance; never spoken.'
+                            read_choices: 'always (default), never (respondent answers freely, interviewer codes it) or on_request.'
+                            hidden_choices: "Unique existing choice values of a radiogroup or checkbox that are valid codes but never offered, such as don't know or refused."
+                            rephrase: 'Translated alternative wording, used only when the respondent does not understand.'
+                            context: 'Translated background (why it is asked, who ordered it) for answering respondent questions; never read as the question.'
+                          rules:
+                            - 'Translated values use the same object form as title and need nonempty plain text for every survey language; plain strings, markup, unknown keys and invalid values make the interview start fail closed.'
+                            - 'Set voice through the ordinary guarded mutations: update_question_props for a question, set_survey_settings for the survey. An optional translated page title is returned as the interview section.'
+                          example:
+                            survey:
+                              voice:
+                                intro:
+                                  en: 'This takes about three minutes.'
+                                  et: 'See võtab umbes kolm minutit.'
+                                  ru: 'Это займёт около трёх минут.'
+                                estimated_minutes: 3
+                            question:
+                              type: radiogroup
+                              name: visit_again
+                              isRequired: true
+                              title:
+                                en: 'Would you visit again?'
+                                et: 'Kas külastaksite uuesti?'
+                                ru: 'Посетили бы вы снова?'
+                              choices:
+                                -
+                                  value: 'yes'
+                                  text:
+                                    en: 'Yes'
+                                    et: Jah
+                                    ru: Да
+                                -
+                                  value: 'no'
+                                  text:
+                                    en: 'No'
+                                    et: Ei
+                                    ru: Нет
+                                -
+                                  value: dont_know
+                                  text:
+                                    en: "Don't know"
+                                    et: 'Ei oska öelda'
+                                    ru: 'Затрудняюсь ответить'
+                              voice:
+                                read_choices: never
+                                hidden_choices:
+                                  - dont_know
+                                instructions:
+                                  en: 'Accept any clear yes or no.'
+                                  et: 'Sobib iga selge jah või ei.'
+                                  ru: 'Принимайте любой ясный ответ да или нет.'
                         coverage: 'This is the first detailed Collector extension guide for radiogroup questions, not an encyclopedia of every SurveyJS property or question type.'
                       question_types:
                         radiogroup:
@@ -5064,6 +5169,12 @@ paths:
                         type: boolean
                         examples:
                           - false
+                      section:
+                        type:
+                          - string
+                          - 'null'
+                        examples:
+                          - null
                       question:
                         type:
                           - object
@@ -5106,6 +5217,42 @@ paths:
                                     - number
                                 text:
                                   type: string
+                      progress:
+                        type: object
+                        properties:
+                          answered:
+                            type: integer
+                            examples:
+                              - 0
+                          remaining_min:
+                            type: integer
+                            examples:
+                              - 2
+                          remaining_max:
+                            type: integer
+                            examples:
+                              - 3
+                      survey_voice:
+                        type: object
+                        properties:
+                          intro:
+                            type:
+                              - string
+                              - 'null'
+                            examples:
+                              - null
+                          outro:
+                            type:
+                              - string
+                              - 'null'
+                            examples:
+                              - null
+                          estimated_minutes:
+                            type:
+                              - string
+                              - 'null'
+                            examples:
+                              - null
                       previous_question:
                         type:
                           - object
@@ -5165,6 +5312,7 @@ paths:
                       status: awaiting_answer
                       language: et
                       can_go_back: false
+                      section: null
                       question:
                         name: travel
                         type: radiogroup
@@ -5176,9 +5324,71 @@ paths:
                           -
                             value: 'yes'
                             text: Jah
+                            hidden: false
                           -
                             value: 'no'
                             text: Ei
+                            hidden: false
+                        voice:
+                          instructions: null
+                          read_choices: never
+                          hidden_choices: []
+                          rephrase: null
+                          context: null
+                        next:
+                          certain: false
+                          depends_on: travel
+                          candidates:
+                            -
+                              when:
+                                - 'yes'
+                              question:
+                                name: mode
+                                type: radiogroup
+                                read_aloud: 'Millega te reisite?'
+                                description: ''
+                                required: true
+                                value: null
+                                choices:
+                                  -
+                                    value: train
+                                    text: Rongiga
+                                    hidden: false
+                                  -
+                                    value: plane
+                                    text: Lennukiga
+                                    hidden: false
+                                voice:
+                                  instructions: null
+                                  read_choices: always
+                                  hidden_choices: []
+                                  rephrase: null
+                                  context: null
+                            -
+                              when:
+                                - 'no'
+                              question:
+                                name: comment
+                                type: comment
+                                read_aloud: 'Teie kommentaar?'
+                                description: ''
+                                required: true
+                                value: null
+                                choices: []
+                                voice:
+                                  instructions: null
+                                  read_choices: always
+                                  hidden_choices: []
+                                  rephrase: null
+                                  context: null
+                      progress:
+                        answered: 0
+                        remaining_min: 2
+                        remaining_max: 3
+                      survey_voice:
+                        intro: null
+                        outro: null
+                        estimated_minutes: null
                       previous_question: null
         401:
           description: ''
@@ -5484,6 +5694,12 @@ paths:
                         type: boolean
                         examples:
                           - false
+                      section:
+                        type:
+                          - string
+                          - 'null'
+                        examples:
+                          - null
                       question:
                         type:
                           - object
@@ -5526,6 +5742,42 @@ paths:
                                     - number
                                 text:
                                   type: string
+                      progress:
+                        type: object
+                        properties:
+                          answered:
+                            type: integer
+                            examples:
+                              - 0
+                          remaining_min:
+                            type: integer
+                            examples:
+                              - 2
+                          remaining_max:
+                            type: integer
+                            examples:
+                              - 3
+                      survey_voice:
+                        type: object
+                        properties:
+                          intro:
+                            type:
+                              - string
+                              - 'null'
+                            examples:
+                              - null
+                          outro:
+                            type:
+                              - string
+                              - 'null'
+                            examples:
+                              - null
+                          estimated_minutes:
+                            type:
+                              - string
+                              - 'null'
+                            examples:
+                              - null
                       previous_question:
                         type:
                           - object
@@ -5585,6 +5837,7 @@ paths:
                       status: awaiting_answer
                       language: ru
                       can_go_back: false
+                      section: null
                       question:
                         name: travel
                         type: radiogroup
@@ -5596,9 +5849,71 @@ paths:
                           -
                             value: 'yes'
                             text: Да
+                            hidden: false
                           -
                             value: 'no'
                             text: Нет
+                            hidden: false
+                        voice:
+                          instructions: null
+                          read_choices: never
+                          hidden_choices: []
+                          rephrase: null
+                          context: null
+                        next:
+                          certain: false
+                          depends_on: travel
+                          candidates:
+                            -
+                              when:
+                                - 'yes'
+                              question:
+                                name: mode
+                                type: radiogroup
+                                read_aloud: 'На чём вы путешествуете?'
+                                description: ''
+                                required: true
+                                value: null
+                                choices:
+                                  -
+                                    value: train
+                                    text: 'На поезде'
+                                    hidden: false
+                                  -
+                                    value: plane
+                                    text: 'На самолёте'
+                                    hidden: false
+                                voice:
+                                  instructions: null
+                                  read_choices: always
+                                  hidden_choices: []
+                                  rephrase: null
+                                  context: null
+                            -
+                              when:
+                                - 'no'
+                              question:
+                                name: comment
+                                type: comment
+                                read_aloud: 'Ваш комментарий?'
+                                description: ''
+                                required: true
+                                value: null
+                                choices: []
+                                voice:
+                                  instructions: null
+                                  read_choices: always
+                                  hidden_choices: []
+                                  rephrase: null
+                                  context: null
+                      progress:
+                        answered: 0
+                        remaining_min: 2
+                        remaining_max: 3
+                      survey_voice:
+                        intro: null
+                        outro: null
+                        estimated_minutes: null
                       previous_question: null
         401:
           description: ''
@@ -5745,6 +6060,12 @@ paths:
                             type: boolean
                             examples:
                               - true
+                          section:
+                            type:
+                              - string
+                              - 'null'
+                            examples:
+                              - null
                           question:
                             type:
                               - object
@@ -5785,6 +6106,42 @@ paths:
                                       type: [string, number]
                                     text:
                                       type: string
+                          progress:
+                            type: object
+                            properties:
+                              answered:
+                                type: integer
+                                examples:
+                                  - 1
+                              remaining_min:
+                                type: integer
+                                examples:
+                                  - 1
+                              remaining_max:
+                                type: integer
+                                examples:
+                                  - 1
+                          survey_voice:
+                            type: object
+                            properties:
+                              intro:
+                                type:
+                                  - string
+                                  - 'null'
+                                examples:
+                                  - null
+                              outro:
+                                type:
+                                  - string
+                                  - 'null'
+                                examples:
+                                  - null
+                              estimated_minutes:
+                                type:
+                                  - string
+                                  - 'null'
+                                examples:
+                                  - null
                           previous_question:
                             type:
                               - object
@@ -5842,6 +6199,7 @@ paths:
                           status: awaiting_answer
                           language: ru
                           can_go_back: true
+                          section: null
                           question:
                             name: comment
                             type: comment
@@ -5850,6 +6208,23 @@ paths:
                             required: true
                             value: null
                             choices: []
+                            voice:
+                              instructions: null
+                              read_choices: always
+                              hidden_choices: []
+                              rephrase: null
+                              context: null
+                            next:
+                              certain: true
+                              question: null
+                          progress:
+                            answered: 1
+                            remaining_min: 1
+                            remaining_max: 1
+                          survey_voice:
+                            intro: null
+                            outro: null
+                            estimated_minutes: null
                           previous_question:
                             name: travel
                             type: radiogroup
@@ -5861,9 +6236,17 @@ paths:
                               -
                                 value: 'yes'
                                 text: Да
+                                hidden: false
                               -
                                 value: 'no'
                                 text: Нет
+                                hidden: false
+                            voice:
+                              instructions: null
+                              read_choices: never
+                              hidden_choices: []
+                              rephrase: null
+                              context: null
                   -
                     description: ''
                     type: object
@@ -5923,6 +6306,12 @@ paths:
                             type: boolean
                             examples:
                               - false
+                          section:
+                            type:
+                              - string
+                              - 'null'
+                            examples:
+                              - null
                           question:
                             type:
                               - object
@@ -5963,6 +6352,42 @@ paths:
                                       type: [string, number]
                                     text:
                                       type: string
+                          progress:
+                            type: object
+                            properties:
+                              answered:
+                                type: integer
+                                examples:
+                                  - 2
+                              remaining_min:
+                                type: integer
+                                examples:
+                                  - 0
+                              remaining_max:
+                                type: integer
+                                examples:
+                                  - 0
+                          survey_voice:
+                            type: object
+                            properties:
+                              intro:
+                                type:
+                                  - string
+                                  - 'null'
+                                examples:
+                                  - null
+                              outro:
+                                type:
+                                  - string
+                                  - 'null'
+                                examples:
+                                  - null
+                              estimated_minutes:
+                                type:
+                                  - string
+                                  - 'null'
+                                examples:
+                                  - null
                           previous_question:
                             type:
                               - object
@@ -6020,7 +6445,16 @@ paths:
                           status: completed
                           language: ru
                           can_go_back: false
+                          section: null
                           question: null
+                          progress:
+                            answered: 2
+                            remaining_min: 0
+                            remaining_max: 0
+                          survey_voice:
+                            intro: null
+                            outro: null
+                            estimated_minutes: null
                           previous_question: null
         401:
           description: ''
@@ -6298,4 +6732,4 @@ paths:
           type: string
           examples:
             - 33333333-3333-4333-8333-333333333333
-x-source-contract-sha256: dd3a05a02629fda2ac7900737275f4005369aad2276d556c7c25b2c951d127fc
+x-source-contract-sha256: ff9555a54cbfc6e9a7bc44c7d92d24146e44caaeb50c96e87f43036dd83b1c49

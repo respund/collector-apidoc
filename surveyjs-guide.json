@@ -11,6 +11,44 @@
     "auto_advance_priority": "If any question has a non-empty autoAdvanceIf, Collector disables SurveyJS survey-level autoAdvanceEnabled (including its goNextPageAutomatic alias) for that model. If none do, the schema's survey-level setting is unchanged.",
     "runtime": "Live surveys, public and admin previews, and unsaved schema previews use the shared Collector SurveyJS runtime. Preview answers, current page and language survive reload in tab-local browser storage; a new navigation/tab starts fresh, including copied opener storage. Preview never reads or writes respondent responses. Live respondent-code continuation uses the authenticated public-survey database draft; anonymous live draft identifiers are tab-local. There is no newtest parameter.",
     "html_safety": "The shared runtime sanitizes final SurveyJS HTML and Markdown output with its configured DOMPurify protection. Schema HTML is not an execution API.",
+    "voice": {
+      "applies_to": "Headless interviews only (interviewer API). voice is a Collector extension, not an upstream SurveyJS property; SurveyJS rendering ignores it. Absent voice keeps current behavior.",
+      "survey": {
+        "intro": "Translated text spoken once after the greeting, before the first question.",
+        "outro": "Translated text spoken on completion.",
+        "estimated_minutes": "Positive integer; interview responses also compute progress."
+      },
+      "question": {
+        "instructions": "Translated interviewer-only guidance; never spoken.",
+        "read_choices": "always (default), never (respondent answers freely, interviewer codes it) or on_request.",
+        "hidden_choices": "Unique existing choice values of a radiogroup or checkbox that are valid codes but never offered, such as don't know or refused.",
+        "rephrase": "Translated alternative wording, used only when the respondent does not understand.",
+        "context": "Translated background (why it is asked, who ordered it) for answering respondent questions; never read as the question."
+      },
+      "rules": [
+        "Translated values use the same object form as title and need nonempty plain text for every survey language; plain strings, markup, unknown keys and invalid values make the interview start fail closed.",
+        "Set voice through the ordinary guarded mutations: update_question_props for a question, set_survey_settings for the survey. An optional translated page title is returned as the interview section."
+      ],
+      "example": {
+        "survey": { "voice": { "intro": { "en": "This takes about three minutes.", "et": "See võtab umbes kolm minutit.", "ru": "Это займёт около трёх минут." }, "estimated_minutes": 3 } },
+        "question": {
+          "type": "radiogroup",
+          "name": "visit_again",
+          "isRequired": true,
+          "title": { "en": "Would you visit again?", "et": "Kas külastaksite uuesti?", "ru": "Посетили бы вы снова?" },
+          "choices": [
+            { "value": "yes", "text": { "en": "Yes", "et": "Jah", "ru": "Да" } },
+            { "value": "no", "text": { "en": "No", "et": "Ei", "ru": "Нет" } },
+            { "value": "dont_know", "text": { "en": "Don't know", "et": "Ei oska öelda", "ru": "Затрудняюсь ответить" } }
+          ],
+          "voice": {
+            "read_choices": "never",
+            "hidden_choices": ["dont_know"],
+            "instructions": { "en": "Accept any clear yes or no.", "et": "Sobib iga selge jah või ei.", "ru": "Принимайте любой ясный ответ да или нет." }
+          }
+        }
+      }
+    },
     "coverage": "This is the first detailed Collector extension guide for radiogroup questions, not an encyclopedia of every SurveyJS property or question type."
   },
   "question_types": {
