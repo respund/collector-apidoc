@@ -4,7 +4,7 @@
   "scope": "Collector-specific SurveyJS behavior; not a full upstream API reference",
   "general": {
     "schema_format": "SurveyJS JSON",
-    "native_vs_extension": "SurveyJS owns the standard schema and rendering model. autoAdvanceIf and setsSurveyLanguage are Collector extensions, not upstream SurveyJS properties.",
+    "native_vs_extension": "SurveyJS owns the standard schema and rendering model. autoAdvanceIf, setsSurveyLanguage, fixedChoices and voice are Collector extensions, not upstream SurveyJS properties.",
     "extensions_are_not_upstream_properties": true,
     "renderAs": "renderAs selects a renderer for the same native question type; a non-native value requires the matching question package.",
     "package_availability": "Documentation is not deployment availability discovery. Confirm that a required package is installed, enabled and valid before applying a renderAs value.",
@@ -65,6 +65,35 @@
           "minRateDescription": { "en": "Not at all satisfied", "et": "Üldse mitte rahul", "ru": "Совсем не доволен" },
           "maxRateDescription": { "en": "Very satisfied", "et": "Väga rahul", "ru": "Очень доволен" }
         }
+      }
+    },
+    "randomization": {
+      "native": {
+        "questionsOrder": "Survey or page: initial (default) or random. Shuffles the questions within each page; survey level applies to every page, a page value overrides it (pages may also use default = inherit). A panel shuffles only its own elements, inheriting the page unless it sets its own. Pages are never reordered. questionOrder (the SurveyJS 3 name) is read as the same property; prefer questionsOrder.",
+        "choicesOrder": "Any question with a choices array (interviews: radiogroup and checkbox): none (default), asc, desc or random. asc/desc sort by the displayed text in the current language."
+      },
+      "extension": {
+        "fixedChoices": "Collector extension: a list of existing choice values that keep their schema position while the other choices are shuffled (typically Other, Don't know, None at the end). Allowed only with choicesOrder random; every value must be a choice value and listed once."
+      },
+      "stability": "Randomization is applied once per response from a seed and then stays fixed for that response: web reload and draft restore, interview back, next, language change, repeat and next-question lookahead all show the same order. The seed is stored as the response's randomization_seed and exported; the order a respondent saw is reconstructible as randomizeSchema(schema at that revision, seed). Per-question order lists are not stored.",
+      "interviews": "A page whose questions are randomized must not reference another question of the same page (visibleIf, choice visibleIf/enableIf or {placeholders} in titles, descriptions, choice texts or scale texts); such schemas fail closed with unsupported_schema and the path. Conditions that reference earlier pages remain fine.",
+      "rules": [
+        "Set these through the ordinary guarded mutations: update_question_props for choicesOrder/fixedChoices, upsert_page for a page questionsOrder, set_survey_settings for the survey questionsOrder.",
+        "Fixed-choice pattern: put Don't know last in choices, set choicesOrder random and list it in fixedChoices."
+      ],
+      "example": {
+        "type": "radiogroup",
+        "name": "brand",
+        "isRequired": true,
+        "title": { "en": "Which brand do you prefer?", "et": "Millist kaubamärki eelistate?", "ru": "Какую марку вы предпочитаете?" },
+        "choicesOrder": "random",
+        "fixedChoices": ["dont_know"],
+        "choices": [
+          { "value": "alpha", "text": { "en": "Alpha", "et": "Alpha", "ru": "Альфа" } },
+          { "value": "beta", "text": { "en": "Beta", "et": "Beta", "ru": "Бета" } },
+          { "value": "gamma", "text": { "en": "Gamma", "et": "Gamma", "ru": "Гамма" } },
+          { "value": "dont_know", "text": { "en": "Don't know", "et": "Ei oska öelda", "ru": "Затрудняюсь ответить" } }
+        ]
       }
     },
     "coverage": "This is the first detailed Collector extension guide for radiogroup questions, not an encyclopedia of every SurveyJS property or question type."

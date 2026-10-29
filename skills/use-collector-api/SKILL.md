@@ -19,6 +19,10 @@ Read `AGENTS.md`, `workflow.md`, `operations.md`, and `surveyjs-guide.json` befo
 
 Discover `question_types.radiogroup.extensions.setsSurveyLanguage` via the SurveyJS guide endpoint. Use native `type: "radiogroup"` with `setsSurveyLanguage: true`, required by default, on a page before the remaining survey. Choice values must be supported language codes (for example `et` and `ru`), not translated labels or numeric IDs. The selected language applies on successful forward navigation, including automatic navigation when separately enabled. This is behavior, independent of theme/cards. Follow the guide's placement and static-choice limits. Named question reads expose the property; overview does not.
 
+## Randomization
+
+Randomize with native `questionsOrder`/`choicesOrder` and keep fallback choices (Don't know, None, Other) in place with `fixedChoices`; on a randomized page never make one question depend on another question of the same page (headless interviews reject it). See `general.randomization` in the SurveyJS guide.
+
 ## Revision history
 
 Include a short `note` with every survey mutation. It should read like a compact git log entry: a few words describing what changed, not a narrative. Examples: `Lisa kriisikaardid`, `Matrix read kohustuslikuks`, `Luba automaatne edasi`.
