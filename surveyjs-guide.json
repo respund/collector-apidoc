@@ -11,6 +11,17 @@
     "auto_advance_priority": "If any question has a non-empty autoAdvanceIf, Collector disables SurveyJS survey-level autoAdvanceEnabled (including its goNextPageAutomatic alias) for that model. If none do, the schema's survey-level setting is unchanged.",
     "runtime": "Live surveys, public and admin previews, and unsaved schema previews use the shared Collector SurveyJS runtime. Preview answers, current page and language survive reload in tab-local browser storage; a new navigation/tab starts fresh, including copied opener storage. Preview never reads or writes respondent responses. Live respondent-code continuation uses the authenticated public-survey database draft; anonymous live draft identifiers are tab-local. There is no newtest parameter.",
     "html_safety": "The shared runtime sanitizes final SurveyJS HTML and Markdown output with its configured DOMPurify protection. Schema HTML is not an execution API.",
+    "quotas": {
+      "condition": "Quota conditions (managed through the quotas routes, not schema mutations) use SurveyJS expression syntax over question names of the current effective schema, for example {gender} = 'f' and {age} < 35. Functions are not allowed.",
+      "quotaFullText": "Survey-level Collector extension, localized in the same form as title (plain text, no markup; every survey language for headless interviews). Shown when a full quota ends collection for a respondent, on the web as the SurveyJS completion page and in interviews as quota_full_text. Without it Collector uses a built-in EN/ET/RU sentence. Set it with set_survey_settings.",
+      "example": {
+        "quotaFullText": {
+          "en": "Thank you, we already have enough answers from your group.",
+          "et": "Aitäh, teie rühmast on meil juba piisavalt vastuseid.",
+          "ru": "Спасибо, ответов от вашей группы у нас уже достаточно."
+        }
+      }
+    },
     "voice": {
       "applies_to": "Headless interviews only (interviewer API). voice is a Collector extension, not an upstream SurveyJS property; SurveyJS rendering ignores it. Absent voice keeps current behavior.",
       "survey": {

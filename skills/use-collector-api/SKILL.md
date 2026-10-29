@@ -23,6 +23,14 @@ Discover `question_types.radiogroup.extensions.setsSurveyLanguage` via the Surve
 
 Randomize with native `questionsOrder`/`choicesOrder` and keep fallback choices (Don't know, None, Other) in place with `fixedChoices`; on a randomized page never make one question depend on another question of the same page (headless interviews reject it). See `general.randomization` in the SurveyJS guide.
 
+## Quotas
+
+- Quotas are separate from schema mutations: manage them only through the `/quotas` routes, never through `/mutations`; they create no revision and need no `expected_sequence`.
+- Read exact question names (and choice values) from `/overview` or `/questions` before writing a condition; conditions use SurveyJS expression syntax over question names, without functions.
+- When a cell should pause, PATCH `{"enabled":false}` instead of deleting the quota; deletion removes its per-response log.
+- Never set `target` below `completed` to "close" a cell or the survey. A quota decides whether a completed answer still counts; it is not a lifecycle tool, and survey status is changed by hand.
+- Set `starting_count` only for completes collected before the quota existed; Collector does not re-evaluate old responses.
+
 ## Revision history
 
 Include a short `note` with every survey mutation. It should read like a compact git log entry: a few words describing what changed, not a narrative. Examples: `Lisa kriisikaardid`, `Matrix read kohustuslikuks`, `Luba automaatne edasi`.
