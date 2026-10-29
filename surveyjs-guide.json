@@ -16,21 +16,30 @@
       "survey": {
         "intro": "Translated text spoken once after the greeting, before the first question.",
         "outro": "Translated text spoken on completion.",
-        "estimated_minutes": "Positive integer; interview responses also compute progress."
+        "estimated_minutes": "Positive integer; interview responses also compute progress.",
+        "instructions": "Translated interviewer-only guidance for the whole questionnaire (tone, pacing, general rules); returned as survey_voice.instructions, never spoken."
       },
       "question": {
-        "instructions": "Translated interviewer-only guidance; never spoken.",
-        "read_choices": "always (default), never (respondent answers freely, interviewer codes it) or on_request.",
-        "hidden_choices": "Unique existing choice values of a radiogroup or checkbox that are valid codes but never offered, such as don't know or refused.",
+        "instructions": "The standard interviewer-note field for study managers: translated, interviewer-only guidance for this question (what to pay attention to, how to probe or code); never spoken. Example ET: \"Pane tähele: kui vastaja mainib mitut põhjust, küsi peamist.\"",
+        "read_choices": "Default read policy for choices without their own voice.read: always (default), never (respondent answers freely, interviewer codes it) or on_request. A rating with minRateDescription or maxRateDescription defaults to on_request; an explicit value wins.",
+        "hidden_choices": "Unique existing choice values of a radiogroup or checkbox that are valid codes but never offered, such as don't know or refused. Equivalent to voice.read never on those choices; listing a choice whose own voice.read is not never is rejected.",
         "rephrase": "Translated alternative wording, used only when the respondent does not understand.",
         "context": "Translated background (why it is asked, who ordered it) for answering respondent questions; never read as the question."
       },
+      "choice": {
+        "read": "Per-choice voice.read on a radiogroup or checkbox choice: always (read when presenting the question), on_request (fallback such as don't know: not read initially, offered only when the respondent hesitates, asks or no option fits) or never (never offered, but saved when clearly stated). Choices without it use the question read_choices. Every returned choice carries read; hidden stays true for hidden_choices or own read never."
+      },
+      "scale": {
+        "descriptions": "A rating may have translated minRateDescription and maxRateDescription (same form as title). Interview questions return scale {min:{value,text},max:{value,text},step} (text null when absent; scale null for other types).",
+        "voicing": "Describe a scale by its endpoints instead of enumerating numbers: read the question and endpoint texts; read the numbers only when the respondent asks."
+      },
       "rules": [
         "Translated values use the same object form as title and need nonempty plain text for every survey language; plain strings, markup, unknown keys and invalid values make the interview start fail closed.",
-        "Set voice through the ordinary guarded mutations: update_question_props for a question, set_survey_settings for the survey. An optional translated page title is returned as the interview section."
+        "Set voice through the ordinary guarded mutations: update_question_props for a question (including its choices), set_survey_settings for the survey. An optional translated page title is returned as the interview section.",
+        "Fallback-choice pattern: add don't know/refused as ordinary choices with voice.read on_request (offer when needed) or never (code only when volunteered), so the agent does not read them with the substantive options."
       ],
       "example": {
-        "survey": { "voice": { "intro": { "en": "This takes about three minutes.", "et": "See võtab umbes kolm minutit.", "ru": "Это займёт около трёх минут." }, "estimated_minutes": 3 } },
+        "survey": { "voice": { "intro": { "en": "This takes about three minutes.", "et": "See võtab umbes kolm minutit.", "ru": "Это займёт около трёх минут." }, "instructions": { "en": "Note: speak calmly and do not rush the respondent.", "et": "Pane tähele: räägi rahulikult ja ära kiirusta vastajat.", "ru": "Обратите внимание: говорите спокойно и не торопите респондента." }, "estimated_minutes": 3 } },
         "question": {
           "type": "radiogroup",
           "name": "visit_again",
@@ -39,13 +48,22 @@
           "choices": [
             { "value": "yes", "text": { "en": "Yes", "et": "Jah", "ru": "Да" } },
             { "value": "no", "text": { "en": "No", "et": "Ei", "ru": "Нет" } },
-            { "value": "dont_know", "text": { "en": "Don't know", "et": "Ei oska öelda", "ru": "Затрудняюсь ответить" } }
+            { "value": "dont_know", "text": { "en": "Don't know", "et": "Ei oska öelda", "ru": "Затрудняюсь ответить" }, "voice": { "read": "on_request" } }
           ],
           "voice": {
             "read_choices": "never",
-            "hidden_choices": ["dont_know"],
-            "instructions": { "en": "Accept any clear yes or no.", "et": "Sobib iga selge jah või ei.", "ru": "Принимайте любой ясный ответ да или нет." }
+            "instructions": { "en": "Note: accept any clear yes or no.", "et": "Pane tähele: sobib iga selge jah või ei.", "ru": "Обратите внимание: принимайте любой ясный ответ да или нет." }
           }
+        },
+        "rating": {
+          "type": "rating",
+          "name": "satisfaction",
+          "isRequired": true,
+          "rateMin": 1,
+          "rateMax": 5,
+          "title": { "en": "How satisfied are you?", "et": "Kui rahul te olete?", "ru": "Насколько вы довольны?" },
+          "minRateDescription": { "en": "Not at all satisfied", "et": "Üldse mitte rahul", "ru": "Совсем не доволен" },
+          "maxRateDescription": { "en": "Very satisfied", "et": "Väga rahul", "ru": "Очень доволен" }
         }
       }
     },
