@@ -905,7 +905,7 @@ paths:
                               et: 'Aitäh, teie rühmast on meil juba piisavalt vastuseid.'
                               ru: 'Спасибо, ответов от вашей группы у нас уже достаточно.'
                         voice:
-                          applies_to: 'Headless interviews only (interviewer API). voice is a Collector extension, not an upstream SurveyJS property; SurveyJS rendering ignores it. Absent voice keeps current behavior.'
+                          applies_to: "Headless interviews only (interviewer API). voice is a Collector extension, not an upstream SurveyJS property; SurveyJS rendering ignores it. Absent voice keeps current behavior. A question's description (help text) is interviewer context, not spoken: put text that must be read aloud, such as a scenario the question depends on, in the title."
                           survey:
                             intro: 'Translated text spoken once after the greeting, before the first question.'
                             outro: 'Translated text spoken on completion.'
@@ -8136,4 +8136,4 @@ paths:
           type: string
           examples:
             - 88888888-8888-4888-8888-888888888888
-x-source-contract-sha256: 9fa5f061260a50358aadf1976c8c08dbea05e38b25133a3f6de654d4fc265dc6
+x-source-contract-sha256: a0848e8f1c95aa68030580ed9c72c913282013a043333675974671d1aa70935a

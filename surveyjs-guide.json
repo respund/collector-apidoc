@@ -23,7 +23,7 @@
       }
     },
     "voice": {
-      "applies_to": "Headless interviews only (interviewer API). voice is a Collector extension, not an upstream SurveyJS property; SurveyJS rendering ignores it. Absent voice keeps current behavior.",
+      "applies_to": "Headless interviews only (interviewer API). voice is a Collector extension, not an upstream SurveyJS property; SurveyJS rendering ignores it. Absent voice keeps current behavior. A question's description (help text) is interviewer context, not spoken: put text that must be read aloud, such as a scenario the question depends on, in the title.",
       "survey": {
         "intro": "Translated text spoken once after the greeting, before the first question.",
         "outro": "Translated text spoken on completion.",
