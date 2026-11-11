@@ -7326,7 +7326,7 @@ paths:
     get:
       summary: 'List quotas with live counts'
       operationId: listQuotasWithLiveCounts
-      description: "Listing order (position). completed = starting_count + completed responses that matched the quota; quota_full responses\nnever count. full = completed >= target. Disabled quotas are listed but ignored by collection. Concurrent completes may\novershoot a target by the number of in-flight responses."
+      description: "Listing order (position). completed = completed responses that matched the quota; quota_full responses\nnever count. full = completed >= target. Disabled quotas are listed but ignored by collection. Concurrent completes may\novershoot a target by the number of in-flight responses."
       parameters: []
       responses:
         200:
@@ -7372,10 +7372,6 @@ paths:
                               type: boolean
                               examples:
                                 - true
-                            starting_count:
-                              type: integer
-                              examples:
-                                - 10
                             completed:
                               type: integer
                               examples:
@@ -7404,7 +7400,6 @@ paths:
                               condition: "{gender} = 'f' and {age} < 35"
                               target: 100
                               enabled: true
-                              starting_count: 10
                               completed: 42
                               full: false
                               position: 1
@@ -7422,7 +7417,6 @@ paths:
                           condition: "{gender} = 'f' and {age} < 35"
                           target: 100
                           enabled: true
-                          starting_count: 10
                           completed: 42
                           full: false
                           position: 1
@@ -7548,14 +7542,10 @@ paths:
                             type: boolean
                             examples:
                               - true
-                          starting_count:
-                            type: integer
-                            examples:
-                              - 10
                           completed:
                             type: integer
                             examples:
-                              - 10
+                              - 0
                           full:
                             type: boolean
                             examples:
@@ -7583,8 +7573,7 @@ paths:
                         condition: "{gender} = 'f' and {age} < 35"
                         target: 100
                         enabled: true
-                        starting_count: 10
-                        completed: 10
+                        completed: 0
                         full: false
                         position: 1
                         created_at: '2026-01-01T00:00:00.000000Z'
@@ -7744,11 +7733,6 @@ paths:
                   description: 'Default true; disabled quotas are ignored but stay listed.'
                   examples:
                     - true
-                starting_count:
-                  type: integer
-                  description: 'Completes collected before the quota existed, default 0.'
-                  examples:
-                    - 10
               required:
                 - name
                 - condition
@@ -7811,10 +7795,6 @@ paths:
                             type: boolean
                             examples:
                               - false
-                          starting_count:
-                            type: integer
-                            examples:
-                              - 10
                           completed:
                             type: integer
                             examples:
@@ -7846,7 +7826,6 @@ paths:
                         condition: "{gender} = 'f' and {age} < 35"
                         target: 100
                         enabled: false
-                        starting_count: 10
                         completed: 42
                         full: false
                         position: 1
@@ -8007,11 +7986,6 @@ paths:
                   description: 'false pauses the quota.'
                   examples:
                     - false
-                starting_count:
-                  type: integer
-                  description: 'At least 0.'
-                  examples:
-                    - 10
     delete:
       summary: 'Delete a quota'
       operationId: deleteAQuota
@@ -8136,4 +8110,4 @@ paths:
           type: string
           examples:
             - 88888888-8888-4888-8888-888888888888
-x-source-contract-sha256: a0848e8f1c95aa68030580ed9c72c913282013a043333675974671d1aa70935a
+x-source-contract-sha256: c8d0bf94ace785dd93dd8229596b3800d67b03398d92320f612fad456dcb5cf4

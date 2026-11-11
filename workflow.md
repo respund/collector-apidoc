@@ -166,20 +166,20 @@ GET `/api/external/surveys/{survey}/participants/{token}/exists` returns `{succe
 
 A quota says whether a completed answer still counts. It never selects respondents, closes the survey or schedules anything. Four routes, all requiring `editor` plus the normal survey ownership/explicit manager-key scope. Quota writes are **not** schema mutations: they create no revision, need no `expected_sequence` and are not affected by `finalize`.
 
-- GET `/api/external/surveys/{survey}/quotas` returns `data.quotas` in listing order: `id`, `name`, `condition`, `target`, `enabled`, `starting_count`, `completed`, `full`, `position`, `created_at`, `updated_at`.
-- POST `/api/external/surveys/{survey}/quotas` with `name` (unique per survey, <=100), `condition`, `target` (>=1) and optional `enabled` (default true) and `starting_count` (default 0) returns 201 with `data.quota`. New quotas are appended to the listing order.
+- GET `/api/external/surveys/{survey}/quotas` returns `data.quotas` in listing order: `id`, `name`, `condition`, `target`, `enabled`, `completed`, `full`, `position`, `created_at`, `updated_at`.
+- POST `/api/external/surveys/{survey}/quotas` with `name` (unique per survey, <=100), `condition`, `target` (>=1) and optional `enabled` (default true) returns 201 with `data.quota`. New quotas are appended to the listing order.
 - PATCH `/api/external/surveys/{survey}/quotas/{quota}` accepts any subset of the same fields and returns 200 with `data.quota`. `{"enabled":false}` switches a quota off without deleting it; `{"enabled":true}` switches it back on.
 - DELETE `/api/external/surveys/{survey}/quotas/{quota}` returns 200. The quota's per-response log goes with it; responses it ended keep status `quota_full` and `quota_full_name`.
 
 ```json
-{"name":"Women under 35","condition":"{gender} = 'f' and {age} < 35","target":100,"starting_count":10}
+{"name":"Women under 35","condition":"{gender} = 'f' and {age} < 35","target":100}
 ```
 
 `condition` uses SurveyJS expression syntax over question names of the survey's **current effective schema**. It is checked by the interview runtime on create and whenever it changes: it must parse, must not call functions and must reference at least one existing question. Failures are Laravel 422 with `errors.condition` codes: `invalid_expression`, `functions_not_allowed`, `no_question_referenced`, `unknown_question:<name>`. A duplicate name is 422 `errors.name`. Quota condition checks need the interview runtime (Node, as for headless interviews); without it the write fails with 503 `runtime_unavailable`. Writes that do not change `condition` do not need it.
 
 Workflow: list quotas → read question names from `/overview` (or `/questions` for exact choice values) → create → list again and verify `completed`/`full` → pause or resume a cell with PATCH `enabled`. Overview and agent-context also include `data.quotas` as `{id,name,target,enabled,completed,full}`.
 
-**Counting:** `completed = starting_count + completed responses that matched the quota`; `full = completed >= target`. Responses with status `quota_full` never count toward any quota. `starting_count` is a manual offset for completes collected before the quota existed: Collector does not re-evaluate historical responses. Concurrent completes may overshoot a target by the number of responses in flight. Disabled quotas are listed but ignored everywhere else.
+**Counting:** `completed` = completed responses that matched the quota; `full = completed >= target`. Responses with status `quota_full` never count toward any quota. Collector does not re-evaluate historical responses: a quota counts responses completed while it exists. Concurrent completes may overshoot a target by the number of responses in flight. Disabled quotas are listed but ignored everywhere else.
 
 **Ending collection:** a respondent ends when the first enabled, full quota (in listing order) whose referenced questions are all answered and whose condition holds is reached. The respondent sees the survey's `quotaFullText` (localized like `title`; set it with `set_survey_settings`), or a built-in EN/ET/RU sentence. Web collection checks this in the browser on leaving a page and on completion, after refetching the quota state; the server checks only that submitted quota IDs are enabled quotas of the survey and does not re-evaluate conditions, exactly as the browser already decides visibility and validation. Headless interviews check after every successful `answer`/`next`: the interview then ends with `status:"quota_full"`, `question:null`, `quota:{id,name}` and `quota_full_text`; `back` is no longer possible (`interview_completed`). In `live` mode this stores a Response with status `quota_full`; `test` mode applies quotas the same way but stores nothing. Preview never applies quotas.
 

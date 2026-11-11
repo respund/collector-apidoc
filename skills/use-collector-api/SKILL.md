@@ -29,7 +29,6 @@ Randomize with native `questionsOrder`/`choicesOrder` and keep fallback choices 
 - Read exact question names (and choice values) from `/overview` or `/questions` before writing a condition; conditions use SurveyJS expression syntax over question names, without functions.
 - When a cell should pause, PATCH `{"enabled":false}` instead of deleting the quota; deletion removes its per-response log.
 - Never set `target` below `completed` to "close" a cell or the survey. A quota decides whether a completed answer still counts; it is not a lifecycle tool, and survey status is changed by hand.
-- Set `starting_count` only for completes collected before the quota existed; Collector does not re-evaluate old responses.
 
 ## Revision history
 
